@@ -621,7 +621,7 @@ function collect(a, group){
     o.castShadow = !o.userData.noShadow; o.receiveShadow = true;
     if (o.userData.actor) return;
     o.userData.actor = a;
-    for (const m of (Array.isArray(o.material) ? o.material : [o.material])) if (!m.userData.keepEmissive && !a.mats.includes(m)) a.mats.push(m);
+    for (const m of (Array.isArray(o.material) ? o.material : [o.material])) if (m.emissive && !m.userData.keepEmissive && !a.mats.includes(m)) a.mats.push(m);
   });
 }
 function staticObj(sc, id, group, info){ const a = {id, sc, info:info||id}; collect(a, group); actors[sc][id] = a; return a; }
