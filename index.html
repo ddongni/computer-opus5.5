@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
-<title>PC 분해·조립 실습</title>
+<title>PC Build Bench</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
@@ -33,6 +33,8 @@ header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-be
 .seg button{border:0;background:transparent;padding:6px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .seg.scn button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.seg.lang button{padding:6px 10px}
+.seg.lang button[aria-pressed="true"]{background:var(--raise);color:var(--fg)}
 .seg button:focus-visible,.btn:focus-visible,.steps button:focus-visible,select:focus-visible,.mini:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 #stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--bg)}
@@ -124,15 +126,19 @@ select{background:var(--raise);border:1px solid var(--line);color:var(--fg);bord
 
 <div class="app">
   <header>
-    <div class="brand"><h1>PC 분해·조립 실습</h1><span class="sub">Service bench · 3D</span></div>
+    <div class="brand"><h1 id="h1">PC Build Bench</h1><span class="sub">Service bench · 3D</span></div>
     <div class="switches">
-      <div class="seg scn" role="group" aria-label="실습 종류">
-        <button id="scnPC" aria-pressed="true">개인 PC</button>
-        <button id="scnSRV" aria-pressed="false">회사 서버</button>
+      <div class="seg scn" role="group" aria-label="Scenario">
+        <button id="scnPC" aria-pressed="true">Personal PC</button>
+        <button id="scnSRV" aria-pressed="false">Company server</button>
       </div>
-      <div class="seg" role="group" aria-label="모드">
-        <button id="modeAsm" aria-pressed="true">조립</button>
-        <button id="modeDis" aria-pressed="false">분해</button>
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="modeAsm" aria-pressed="true">Assemble</button>
+        <button id="modeDis" aria-pressed="false">Disassemble</button>
+      </div>
+      <div class="seg lang" role="group" aria-label="Language">
+        <button id="lnEN" aria-pressed="true" lang="en">EN</button>
+        <button id="lnKO" aria-pressed="false" lang="ko">한국어</button>
       </div>
     </div>
   </header>
@@ -140,12 +146,12 @@ select{background:var(--raise);border:1px solid var(--line);color:var(--fg);bord
   <div id="stage">
     <div class="tag" id="tag"><span class="dot"></span><span class="txt" id="tagText"></span></div>
     <div class="screen" id="scr" hidden>
-      <div class="scrbar"><span id="scrTitle">모니터 화면</span><button class="mini" id="scrSize">확대</button></div>
+      <div class="scrbar"><span id="scrTitle">Monitor</span><button class="mini" id="scrSize">Enlarge</button></div>
       <canvas id="scrCanvas" width="960" height="600"></canvas>
     </div>
     <div class="toast" id="toast" hidden><b id="toastK">POST OK</b><span id="toastT"></span></div>
     <div class="legend" id="legend" hidden></div>
-    <div class="hint">드래그 회전 · 휠 확대 · 우클릭 이동 · 부품을 클릭하면 설명</div>
+    <div class="hint" id="hint">Drag to rotate · scroll to zoom · right-drag to pan · click a part for details</div>
   </div>
 
   <aside>
@@ -156,20 +162,20 @@ select{background:var(--raise);border:1px solid var(--line);color:var(--fg);bord
         <div class="en" id="infoEn"></div>
         <div id="infoBody"></div>
       </div>
-      <div class="listhead"><h3>작업 순서</h3><span id="progTxt">0 / 10</span></div>
+      <div class="listhead"><h3 id="listH">Steps</h3><span id="progTxt">0 / 10</span></div>
       <div class="bar"><i id="progBar"></i></div>
       <ol class="steps" id="stepList"></ol>
     </div>
     <div class="controls">
       <div class="row">
-        <button class="btn" id="btnPrev" aria-label="이전 단계 되돌리기">◀ 이전</button>
+        <button class="btn" id="btnPrev">◀ Back</button>
         <button class="btn primary" id="btnNext"><span class="lab" id="nextLabel">다음</span><kbd>→</kbd></button>
       </div>
       <div class="row">
-        <button class="btn small" id="btnAuto" aria-pressed="false">▶ 자동 재생</button>
-        <label class="grow" for="speedSel" style="text-align:right;font-size:13px;color:var(--muted)">속도</label>
+        <button class="btn small" id="btnAuto" aria-pressed="false">▶ Autoplay</button>
+        <label class="grow" id="speedLab" for="speedSel" style="text-align:right;font-size:13px;color:var(--muted)">Speed</label>
         <select id="speedSel"><option value="0.6">0.6×</option><option value="1" selected>1×</option><option value="1.8">1.8×</option></select>
-        <button class="btn small" id="btnView">시점 초기화</button>
+        <button class="btn small" id="btnView">Reset view</button>
       </div>
     </div>
   </aside>
@@ -195,10 +201,11 @@ const D = Math.PI / 180;
 const MONO = '"IBM Plex Mono","IBM Plex Sans KR",Menlo,monospace';
 const SANS = '"IBM Plex Sans KR","Apple SD Gothic Neo",sans-serif';
 const COL = {power:0xf0b23e, net:0x5fd4ff, video:0xb18cff, input:0x6fe08a, mgmt:0xff7ab8};
-const COLNAME = {power:'전력', net:'네트워크 데이터', video:'영상 출력', input:'입력 신호', mgmt:'관리망 (BMC)'};
+const COLNAME_KO = {power:'전력', net:'네트워크 데이터', video:'영상 출력', input:'입력 신호', mgmt:'관리망 (BMC)'};
+const COLNAME_EN = {power:'Power', net:'Network data', video:'Video out', input:'Input', mgmt:'Management (BMC)'};
 
 /* ================================================================ content */
-const INFO = {
+const INFO_KO = {
   mobo:{name:'메인보드',en:'Motherboard · ATX',
     role:'모든 부품이 꽂히는 큰 기판입니다. CPU·메모리·그래픽카드·SSD가 서로 데이터를 주고받는 통로와, 각 부품에 전기를 나눠 주는 회로가 여기에 모여 있습니다. 뒤쪽 I/O 패널에는 USB·랜 포트가 있어 바깥 장치와도 연결됩니다.',
     in:'케이스 안쪽의 스탠드오프(금색 받침 나사) 위치를 메인보드 구멍에 맞춥니다. 뒤쪽 I/O 포트가 케이스 뒷면 구멍에 딱 맞도록 밀어 넣은 뒤, 나사 9개를 대각선 순서로 가볍게 조입니다.',
@@ -525,7 +532,7 @@ const PH = {
     '#  System load:  0.02      Memory usage: 2%      Processes: 312','#  Usage of /:   4.1%      IPv4 bond0:   10.0.10.21','',
     'ops@web-01:~$ uptime','# 14:12:03 up 9 min,  1 user,  load average: 0.02, 0.03, 0.00',
     'ops@web-01:~$ df -h /data','#/dev/sdb1   3.5T   25G   3.5T   1% /data','',
-    '+서버 준비 완료 — 이제 콘솔 없이 원격으로 관리합니다.']},
+    '+Server ready — managed remotely from here on, no console needed.']},
   shut:{where:'laptop', title:'관리자 노트북 — 서비스 중지 · 종료', dur:5.5, lines:[
     'admin@laptop:~$ ssh ops@10.0.10.21',
     'ops@web-01:~$ sudo systemctl stop nginx app.service',
@@ -535,6 +542,284 @@ const PH = {
     'admin@laptop:~$ ipmitool -I lanplus -H 10.0.100.21 -U admin chassis power status',
     '+Chassis Power is off']}
 };
+
+
+/* ================================================================ English content */
+const INFO_EN = {
+  mobo:{name:'Motherboard',en:'Motherboard · ATX',
+    role:'The large circuit board every other part plugs into. It carries the pathways that let the CPU, memory, graphics card and SSD exchange data, plus the circuits that hand out power to each of them. The rear I/O panel holds the USB and network ports that connect to the outside world.',
+    in:'Line up the holes in the board with the brass standoffs inside the case. Slide the board in so the rear I/O ports sit snugly in the case\'s rear opening, then lightly tighten the nine screws in a diagonal pattern.',
+    out:'Remove every cable and component first, then undo the nine screws. Pull the board slightly forward to free the I/O ports from the rear opening and lift it out by the edges.',
+    specs:['ATX 305×244mm','LGA socket','4 × DDR5 slots','PCIe x16','M.2 slot'],
+    note:['TIP','In a real build, many people fit the CPU, cooler, memory and M.2 drive to the motherboard before it goes into the case. There is far more room for your hands.'],
+    hin:'How to install',hout:'How to remove'},
+  cpu:{name:'CPU',en:'Central Processing Unit',
+    role:'The brain of the computer: it works through a program\'s instructions one by one. It performs billions of operations per second, and more cores let it run more tasks at once.',
+    in:'Lift the socket lever and open the load plate. Match the gold triangle on the CPU\'s corner to the triangle on the socket, lower the chip straight down without pressing, then close the plate and latch the lever.',
+    out:'Remove the cooler first, then release the lever and open the plate. Lift the CPU straight up by its edges. Clean off old thermal paste with isopropyl alcohol.',
+    specs:['8–24 cores','3–5.5 GHz','65–125 W TDP'],
+    caution:'Socket pins are as thin as a hair, and a single bent pin can kill the board. Never press or slide the CPU.',
+    hin:'How to install',hout:'How to remove'},
+  cooler:{name:'CPU cooler',en:'Tower Air Cooler',
+    role:'Copper heat pipes carry heat from the CPU up into the aluminium fins, and the fan blows it away. Without it, the CPU slows itself down (thermal throttling) or shuts off.',
+    in:'Put a pea-sized dot of thermal paste in the centre of the CPU. Lower the cooler straight down and tighten the screws a little at a time in a diagonal pattern so the pressure stays even. Plug the fan cable into the CPU_FAN header.',
+    out:'Unplug the fan cable and loosen the screws diagonally. The paste acts like glue, so twist the cooler gently side to side before lifting it.',
+    specs:['4 heat pipes','120 mm fan','34 fins'],
+    note:['TIP','Thermal paste fills the microscopic gaps between CPU and cooler so heat moves across. Too much just squeezes out the sides.'],
+    hin:'How to install',hout:'How to remove'},
+  ram:{name:'Memory (RAM)',en:'DDR5 DIMM × 2',
+    role:'The workbench where the CPU keeps the data it is using right now. Much faster than the SSD, but everything is lost when power goes off. More capacity means you can keep more programs open without slowing down.',
+    in:'Open the latches at the slot ends. Match the notch on the stick to the key in the slot and press both ends straight down with your thumbs until the latches click shut. With two sticks, use the second and fourth slots from the CPU (A2 and B2).',
+    out:'Press the latch at the end of the slot and the stick pops up slightly. Pull it straight out.',
+    specs:['DDR5-5600','16 GB × 2','Dual channel'],
+    hin:'How to install',hout:'How to remove'},
+  m2:{name:'M.2 SSD',en:'NVMe Solid State Drive',
+    role:'Permanent storage for the operating system, programs, photos and documents. Nothing is lost when the power is off. It plugs straight into the motherboard and talks over PCIe, so it is dozens of times faster than an old hard drive.',
+    in:'Slide the drive into the M.2 slot at about 30 degrees, press the far end down flat and secure it with the screw or latch. If there is a heatsink, peel off its protective film and fit it on top.',
+    out:'Remove the screw and the drive springs up at an angle. Pull it out of the slot at that same angle.',
+    specs:['M.2 2280','PCIe 4.0 ×4','1 TB · 7,000 MB/s'],
+    hin:'How to install',hout:'How to remove'},
+  psu:{name:'Power supply (PSU)',en:'Power Supply Unit',
+    role:'Converts AC mains power into the DC voltages the parts use (12 V, 5 V, 3.3 V). Unstable power makes the whole system unstable, so this part matters more than it looks.',
+    in:'Slide it into the bay at the bottom rear of the case. If the case floor has a dust filter, point the fan down. Secure it with four screws from the back of the case.',
+    out:'Unplug the power cord and every cable going to the parts, remove the four rear screws and pull the unit back into the case to lift it out.',
+    specs:['850 W','80 PLUS Gold','Fully modular'],
+    caution:'Capacitors inside a power supply hold charge even after it is unplugged. Never open the PSU housing.',
+    hin:'How to install',hout:'How to remove'},
+  gpu:{name:'Graphics card (GPU)',en:'Graphics Card',
+    role:'Calculates the images you see on screen. Thousands of small cores work at once, which makes it strong at anything that repeats the same maths at scale: 3D games, video editing, AI. The monitor plugs in here too.',
+    in:'Remove two or three slot covers at the back of the case. Line the gold contacts up with the PCIe x16 slot closest to the CPU, press straight down until the slot latch clicks, then screw the bracket to the case.',
+    out:'Unplug the power cable first and remove the bracket screws. Hold the slot latch down and pull the card straight out.',
+    specs:['PCIe 4.0 x16','12 GB GDDR6X','3 fans · 2.5 slots'],
+    note:['TIP','Heavy cards can sag over time, so many builders add a GPU support bracket.'],
+    hin:'How to install',hout:'How to remove'},
+  cables:{name:'Internal power cables',en:'24-pin ATX · 8-pin EPS · 8-pin PCIe',
+    role:'Carry power from the PSU to each part: a 24-pin connector to the motherboard, an 8-pin EPS to the CPU and an 8-pin PCIe to the graphics card.',
+    in:'Each connector is keyed so it only fits one way. Check which side the clip is on and push it all the way in until it clicks. Route spare cable behind the motherboard tray for better airflow.',
+    out:'Press the clip with your thumb and pull on the connector body. Pulling the wires can tear the pins out.',
+    specs:['ATX 24-pin → motherboard','EPS 8-pin → CPU','PCIe 8-pin → GPU'],
+    hin:'How to connect',hout:'How to disconnect'},
+  panel:{name:'Side panel',en:'Tempered Glass Side Panel',
+    role:'Keeps dust and knocks away from the parts and keeps the case\'s airflow on its designed path: in at the front, out at the back and top.',
+    in:'Seat the panel in the case\'s grooves and fix it with the four thumbscrews. Finger-tight is enough.',
+    out:'Support the panel with one hand while you undo the thumbscrews. Lay the glass flat once it is off.',
+    specs:['4 mm tempered glass','4 thumbscrews'],
+    caution:'Tempered glass can shatter all at once if an edge is knocked. Store it lying flat, never standing up.',
+    hin:'How to close',hout:'How to open'},
+  monitor:{name:'Monitor',en:'Display · Output device',
+    role:'The output device that lets you see what the computer has worked out. It receives the picture the graphics card draws over a DisplayPort or HDMI cable and redraws it 60 to 240 times a second.',
+    in:'Plug the monitor cable into the graphics card\'s ports, not the motherboard\'s. On the motherboard ports the graphics card goes unused, or you get no picture at all.',
+    out:'Pull each end by the connector. DisplayPort has a release button on top that you need to hold down.',
+    specs:['DisplayPort 1.4','27" QHD','PC → monitor'],
+    flow:'The purple dots are the video signal. It flows one way only, from the graphics card to the monitor.',
+    hin:'How to connect',hout:'How to disconnect'},
+  input:{name:'Keyboard & mouse',en:'Input devices · USB',
+    role:'Input devices turn your hand movements into signals for the computer. Every key press and mouse movement is reported over USB hundreds to thousands of times a second; the CPU handles it and the result appears on the monitor.',
+    in:'Plug them into the USB ports on the motherboard\'s rear I/O panel. USB-A only goes in one way, so flip it if it resists. The operating system recognises them automatically.',
+    out:'Pull each USB plug straight out by the connector. For wireless devices, remove the receiver (dongle).',
+    specs:['USB 2.0','1000 Hz polling','Keyboard & mouse → PC'],
+    flow:'The green dots are input signals. Keyboard → USB → CPU → graphics card → monitor: watch the text being typed on the monitor screen.',
+    hin:'How to connect',hout:'How to disconnect'},
+  lan:{name:'Network (LAN)',en:'Ethernet · RJ45',
+    role:'The path for exchanging data with other computers and the internet. It runs from the PC\'s network port to the router, then through the ISP\'s fibre box (ONT) to the internet. Data travels in small bundles called packets, in both directions at once.',
+    in:'Click the cable into the RJ45 port on the motherboard I/O and a LAN port on the router. The port LEDs start blinking and the router hands the PC an address like 192.168.0.x automatically (DHCP).',
+    out:'Hold down the plastic clip on top of the plug while you pull. Pulling without pressing it snaps the clip off.',
+    specs:['Cat6 cable','1 / 2.5 Gbps','PC ↔ router ↔ internet'],
+    flow:'The light-blue dots are network packets. Uploads and downloads happen at the same time, so they move both ways.',
+    hin:'How to connect',hout:'How to disconnect'},
+  cord:{name:'Power cord',en:'AC Power Cord',
+    role:'Brings AC power from the power strip to the PSU, which converts it to DC and hands it out to the parts over the internal cables.',
+    in:'Plug in the power cord last, after everything else is connected. Check that the PSU switch on the back is at O (off), plug in, then flip it to I (on).',
+    out:'Shut the system down, flip the PSU switch to O, then unplug the cord. When taking a PC apart, cutting the power always comes first.',
+    specs:['AC 120–240 V','C13 connector','Strip → PSU'],
+    flow:'The yellow dots are power. Even with the computer off, standby power still reaches the motherboard.',
+    hin:'How to connect',hout:'How to disconnect'},
+  power:{name:'Power on',en:'Power On · POST · Data flow',
+    role:'Once everything is connected, power the machine up to check it works. The motherboard first tests the CPU, memory and graphics card in turn, a process called POST (Power-On Self-Test). When the operating system loads, input, output and network traffic all start flowing.',
+    in:'Press the case power button. The fans spin up, the BIOS screen flashes past on the monitor and the desktop appears. Watch how the dots travel along each cable.',
+    out:'Choose Shut down in the operating system. When the fans stop and the monitor says No Signal, it is off. Hold the power button for about five seconds to drain leftover charge, then touch bare metal on the case to discharge static from your body.',
+    specs:['POST','BIOS / UEFI'],
+    flow:'Yellow = power, light blue = network, purple = video out, green = keyboard and mouse input. The legend at the bottom right shows what is flowing right now.',
+    hin:'How to power on',hout:'How to shut down'},
+  case:{name:'Case',en:'Mid-Tower Case',
+    role:'The frame that holds every part in place. Front fans pull cool air in and the rear fan pushes hot air out. The back panel gathers the motherboard I/O, graphics card ports and power inlet.',
+    specs:['Mid-tower','2 intake fans','1 exhaust fan']},
+  strip:{name:'Power strip',en:'Power Strip',
+    role:'Shares one wall outlet between the PC, monitor and router. Use one with overload protection, and avoid plugging one power strip into another.',specs:['Overload protection','Switched']},
+  router:{name:'Router · ONT',en:'Router · Optical Network Terminal',
+    role:'The router gives each device in the home or office an internal address (192.168.x.x) and finds the way for packets going to and from the internet. The ONT converts the ISP\'s fibre signal into Ethernet.',specs:['DHCP','NAT','4 × gigabit LAN']},
+
+  lid:{name:'Server cover',en:'Chassis Cover',
+    role:'Keeps dust out and forms the air duct that sends air from the front fans over the components. Running a server with the cover off for long breaks its cooling.',
+    in:'Lower the cover into its grooves and slide it forward until the top latch closes.',
+    out:'Lift the release latch on top, slide the cover back and lift it off. Clip an antistatic wrist strap to bare chassis metal before you start.',
+    specs:['2U chassis','Tool-less'],hin:'How to close',hout:'How to open'},
+  sram:{name:'ECC memory',en:'DDR5 ECC RDIMM × 8',
+    role:'Server memory supports ECC (error-correcting code), so it fixes itself when a single bit flips on its own. On machines that run for months without a break, it stops data from being silently corrupted.',
+    in:'With two CPUs, give each CPU the same number of sticks in the same slot positions so every memory channel is used. Check the slot map on the inside of the cover, line up the notch and press until both latches close.',
+    out:'Open both latches, pull each stick straight out and put it in an antistatic bag.',
+    specs:['32 GB × 8 = 256 GB','DDR5-4800 RDIMM','4 channels per CPU'],
+    hin:'How to install',hout:'How to remove'},
+  drives:{name:'Hot-swap drives',en:'Hot-swap SSD × 4',
+    role:'Storage that slides into the front bays. Hot-swap means a failed drive can be pulled and replaced while the server keeps running. Paired into RAID 1, either drive in a pair can fail without losing data.',
+    in:'With the tray lever open, push the tray all the way into the bay and close the lever to lock it. Note the bay numbers (0–3); you need them when setting up RAID.',
+    out:'Press the tray button to open the lever and pull the tray out. If the server is being returned or scrapped, securely erase the drives or physically destroy them.',
+    specs:['2 × 960 GB (OS)','2 × 3.84 TB (data)','Front hot-swap bays'],
+    caution:'Shipping drives out of the building without wiping them leads straight to a data leak.',
+    hin:'How to install',hout:'How to remove'},
+  rails:{name:'Slide rails',en:'Rail Kit',
+    role:'Carry the server\'s weight and let it slide out like a drawer. They hook onto the rack\'s front and rear posts.',
+    in:'Decide the height (U number) and hook each rail into the same hole height on the front and rear posts. In this lab the 2U server goes into 14U–15U. Heavier gear goes lower in the rack.',
+    out:'With the server out, press the rail release tabs and unhook the rails from the posts.',
+    specs:['19-inch rack standard','1U = 44.45 mm','Tool-less latches'],
+    hin:'How to install',hout:'How to remove'},
+  server:{name:'Rack server',en:'2U Rack Server · web-01',
+    role:'The computer that runs the company\'s services around the clock: websites, databases, internal systems. Two CPUs, redundant power and a remote management chip (BMC) are there for one reason: to keep it from stopping.',
+    in:'Two people lift it, line the inner rails on the server\'s sides up with the rack rails and slide it all the way in. Fix it with the screws in the front handles.',
+    out:'Disconnect every cable, undo the front screws, slide the server out to the rail stops, press the release tabs and lift it out with two people.',
+    specs:['2U · about 25 kg','2 CPUs · 48 cores','Redundant PSU · BMC'],
+    caution:'A 2U server weighs more than 20 kg. Never lift it alone; always work in pairs.',
+    hin:'How to install',hout:'How to remove'},
+  spower:{name:'Redundant power',en:'Redundant PSU · PDU A/B',
+    role:'The server has two power supplies. One plugs into PDU A (red), the other into PDU B (blue), each fed by a separate power circuit. If one side loses power, the server keeps running on the other.',
+    in:'Connect PSU 1 → PDU A and PSU 2 → PDU B, then fit the retention clips so the cords cannot work loose. Plugging both into the same PDU defeats the redundancy.',
+    out:'Confirm the server is powered off, release the clips and unplug at the PSU end first.',
+    specs:['1+1 redundant PSU','PDU A / B','C13–C14 cords'],
+    flow:'The moment power is connected, the BMC (remote management chip) wakes up on standby power, even though the server itself is off.',
+    hin:'How to connect',hout:'How to disconnect'},
+  snet:{name:'Network & BMC',en:'Data NIC × 2 · BMC',
+    role:'The two data ports go to the top-of-rack (ToR) switch and are bonded into one link, so traffic keeps flowing if either cable fails. The BMC port goes to a separate management switch, so you can power the server on and see its screen remotely even when it is off.',
+    in:'Label both ends of every cable (for example web-01 NIC1 ↔ SW1 port 12) and connect them. Run them up the cable management at the rear of the rack.',
+    out:'Unplug them one at a time against the labels, and ask the network team to disable the switch ports.',
+    specs:['2 × 10GbE (bond0)','1GbE BMC','Management VLAN 100'],
+    flow:'Light blue = service data (server ↔ ToR switch ↔ corporate network). Pink = management network (BMC). The BMC keeps talking even when the server is powered off.',
+    hin:'How to connect',hout:'How to disconnect'},
+  console:{name:'Console (crash cart)',en:'Crash Cart · VGA + USB',
+    role:'Before the operating system is installed you cannot log in remotely, so a rolling cart with a monitor and keyboard is plugged into the server directly. Once installation is done it is unplugged and the server is managed over the network.',
+    in:'Plug the cart\'s cables into the VGA and USB ports on the server\'s front panel. Many companies use the BMC\'s web-based remote console instead.',
+    out:'Once SSH from the admin laptop works, unplug the cables and roll the cart away.',
+    specs:['VGA video · USB keyboard','Replaceable by BMC remote console'],
+    flow:'Purple = video from the server to the console monitor. Green = input from the console keyboard to the server.',
+    hin:'How to connect',hout:'How to disconnect'},
+  spw:{name:'Server power on',en:'Power On · POST',
+    role:'Press the power button and the fans roar to full speed before settling, while the firmware tests the CPUs, memory, drives and network cards (POST). Because of the memory test, servers take far longer to boot than a PC, often one to five minutes.',
+    in:'Press the front power button, or power it on remotely from the BMC web page or with ipmitool. Check the POST results on the console for errors.',
+    out:'Shut down cleanly from the operating system.',
+    specs:['POST','BMC / IPMI'],
+    flow:'Once powered on, service network traffic (light blue) and console video (purple) start to flow.',
+    hin:'Steps',hout:'Steps'},
+  raid:{name:'RAID setup',en:'RAID 1 · Virtual Drives',
+    role:'RAID combines several drives so they act as one. RAID 1 writes identical data to two drives at once, so one can fail without stopping the service. The OS and the data get separate pairs.',
+    in:'Press the RAID setup key during boot. Create a RAID 1 virtual drive from disks 0 and 1 (OS) and another from disks 2 and 3 (data), then set the OS drive as the boot device.',
+    specs:['VD0 RAID 1 · 894 GB','VD1 RAID 1 · 3.49 TB'],
+    note:['TIP','RAID protects against drive failure; it is not a backup. A file you delete by mistake disappears from both drives at once.'],
+    hin:'Steps'},
+  boot:{name:'Boot the installer',en:'Boot from USB · Ubuntu Server 24.04 LTS',
+    role:'Boot from a USB stick holding the Linux installer, or from an ISO attached through the BMC\'s virtual media. This lab installs Ubuntu Server 24.04 LTS; LTS releases get at least five years of security updates.',
+    in:'Write the ISO from the official site to a USB stick, plug it into the server\'s front USB port and pick it from the boot menu (F11 or similar). In the GRUB menu choose "Try or Install Ubuntu Server".',
+    specs:['Ubuntu Server 24.04 LTS','UEFI boot','ISO about 2.6 GB'],hin:'Steps'},
+  installer:{name:'Installer settings',en:'Network · Storage · Profile · SSH',
+    role:'Here you decide which address the server uses on the company network, how the disks are split and who can log in. Servers use a static IP because their address must never change.',
+    in:'Network: bond the two ports into bond0 and set the static IP 10.0.10.21/24 with gateway 10.0.10.1. Storage: on the OS RAID drive, use LVM to split out /, /var and swap; mount the data drive at /data. Profile: hostname web-01, admin user ops, and tick Install OpenSSH server.',
+    specs:['bond0 · 802.3ad','LVM','OpenSSH'],
+    note:['TIP','A separate /var means runaway logs cannot fill the whole system (/) and bring it down.'],
+    hin:'Steps'},
+  install:{name:'Install & reboot',en:'Install & Reboot',
+    role:'The installer partitions the disks, copies the operating system, installs the boot loader (GRUB) and pulls the latest security updates. When it finishes, remove the USB stick and reboot.',
+    in:'Select Reboot Now and remove the install USB when prompted. A login prompt after the reboot means the install succeeded.',
+    specs:['curtin','GRUB (UEFI)','about 10–20 min'],hin:'Steps'},
+  harden:{name:'First login & hardening',en:'First login & hardening',
+    role:'A freshly installed server needs updates and basic security settings before it is exposed to the network: package updates, time zone, firewall, and no password logins over SSH.',
+    in:'Log in on the console as ops, update with apt, allow only SSH through the ufw firewall and enable it. Switch SSH to key-only authentication and check the network with ip and ping.',
+    specs:['apt upgrade','ufw','SSH key auth'],hin:'Steps'},
+  ssh:{name:'Remote SSH access',en:'Remote access over SSH',
+    role:'From now on the admin works on the server from a laptop over the network instead of walking into the server room. Commands travel encrypted from laptop → corporate network → core switch → ToR switch → server.',
+    in:'From the admin laptop run ssh ops@10.0.10.21. On the first connection, verify the server\'s fingerprint and save it.',
+    specs:['SSH · TCP 22','Ed25519 key'],
+    flow:'The light-blue dots heading up the ceiling cable tray to the corporate network are the SSH traffic.',hin:'Steps'},
+  shutdown:{name:'Stop services & shut down',en:'Drain · Backup · Shutdown',
+    role:'Before decommissioning, move the traffic this server handled to other servers (take it out of the load balancer), back up its data, stop its services and shut the operating system down cleanly. Yanking the power can corrupt data.',
+    in:'SSH in, stop the services and confirm the backup has finished, then run sudo shutdown -h now. Use the BMC to confirm the power is off.',
+    specs:['systemctl stop','rsync backup','shutdown -h now'],hin:'Steps'},
+  rack:{name:'Server rack',en:'42U 19-inch Rack',
+    role:'A steel frame that stacks servers, switches and power gear. Height is counted in U (1U = 44.45 mm). Every device faces the same way so cool air comes in at the front and hot air leaves at the back.',
+    specs:['42U','600 W × 1000 D mm','Front intake · rear exhaust']},
+  tor:{name:'ToR switch',en:'Top-of-Rack Switch',
+    role:'Gathers the network connections of every server in the rack and links them to the wider network (the core switch). It sits at the top of the rack, hence Top of Rack. The orange fibre running upward leads to the corporate network.',
+    specs:['48 × 10GbE','4 × 100GbE uplinks']},
+  mgmt:{name:'Management switch',en:'Management Switch',
+    role:'A switch dedicated to the servers\' BMCs (remote management chips). Keeping it separate from the service network means you can still power servers on and off remotely when the service network has an outage.',
+    specs:['48 × 1GbE','VLAN 100']},
+  pdu:{name:'PDU',en:'Power Distribution Unit A / B',
+    role:'Vertical power strips that feed the equipment in the rack. A (red) and B (blue) are fed from different UPS units and switchboards, so gear stays up if one side loses power. Per-outlet power draw can be monitored remotely.',
+    specs:['30 A · 230 V','24 outlets']},
+  ups:{name:'UPS',en:'Uninterruptible Power Supply',
+    role:'During a power cut, its batteries keep everything running for minutes to tens of minutes, buying time for the generator to start or for servers to shut down safely. It is heavy, so it lives at the bottom of the rack.',specs:['3U','5 kVA']},
+  others:{name:'Production servers',en:'Production servers',
+    role:'Servers already running live services. When installing or removing a server, take care not to disturb the cables of the machines next to it.',specs:['24/7 operation']}
+};
+const EN_STEPS = {
+  pc:{
+    asm:[['Install motherboard','Build the PC'],['Install CPU'],['Install CPU cooler'],['Install memory'],['Install M.2 SSD'],['Install power supply'],['Install graphics card'],['Connect internal power cables'],['Close side panel'],
+         ['Connect monitor','Connect peripherals'],['Connect keyboard & mouse'],['Connect network (LAN)'],['Plug in power cord'],['Power on · watch the data flow','Power on']],
+    dis:[['Shut down','Cut power'],['Unplug power cord'],['Unplug network (LAN)','Disconnect peripherals'],['Unplug keyboard & mouse'],['Unplug monitor'],
+         ['Open side panel','Take the PC apart'],['Disconnect internal power cables'],['Remove graphics card'],['Remove power supply'],['Remove M.2 SSD'],['Remove memory'],['Remove CPU cooler'],['Remove CPU'],['Remove motherboard']]
+  },
+  srv:{
+    asm:[['Open server cover','Prepare hardware'],['Install ECC memory'],['Close cover'],['Insert hot-swap drives'],
+         ['Install rails (14U)','Rack it'],['Slide server into rack'],
+         ['Connect dual power (PDU A/B)','Cabling'],['Connect network & BMC'],['Connect console (crash cart)'],
+         ['Power on · POST','Boot & firmware'],['Configure RAID'],
+         ['Boot from install USB','Install Linux'],['Installer settings (network, disks, user)'],['Install & reboot'],['First login · basic hardening'],
+         ['Verify remote SSH','Hand over to operations'],['Disconnect console']],
+    dis:[['Stop services · remote shutdown','Take the service down'],
+         ['Disconnect network & BMC','Unplug cables'],['Disconnect power cables'],
+         ['Pull server from rack','Remove from rack'],['Remove rails'],
+         ['Remove drives · wipe data','Recover hardware'],['Open server cover'],['Remove ECC memory'],['Close cover']]
+  }
+};
+for (const sc of ['pc', 'srv']) for (const md of ['asm', 'dis']) SCN[sc][md].forEach((st, i) => { const e = EN_STEPS[sc][md][i]; st.t_en = e[0]; if (st.sec) st.sec_en = e[1]; });
+const PH_EN = {post:'Console — POST', raid:'Console — RAID setup', boot:'Console — booting install media', inst:'Console — Ubuntu Server installer',
+  install:'Console — install & reboot', login:'Console — first login & hardening', ssh:'Admin laptop — remote SSH', shut:'Admin laptop — stop services & shut down'};
+const INTRO_EN = {
+  pc:{asm:{t:'Getting ready', s:[['Where things stand','Eight parts are laid out on the bench next to an empty case with its side panel off. Build the PC, connect the monitor, keyboard, mouse, network and power, then switch it on to see how signals flow.'],['You will need','A #2 Phillips screwdriver, thermal paste and cable ties. Touch the metal case before you start to discharge static from your body.']], n:['TIP','Click any part in the 3D view to see what it does, whatever step you are on.']},
+       dis:{t:'Getting ready', s:[['Where things stand','The finished computer is running with its monitor, keyboard, mouse and internet all connected. Taking it apart is assembly in reverse: cut the power, unplug the outside connections, then remove parts from the outside in.'],['You will need','A #2 Phillips screwdriver, a small dish for screws, isopropyl alcohol and a cloth for the thermal paste.']], c:'Never touch internal parts while the power cord is plugged in.'}},
+  srv:{asm:{t:'Getting ready', s:[['Where things stand','A new 2U rack server sits on the work table. Fit memory and drives, mount it at 14U in the rack, connect power and network, then install Ubuntu Server until it can be managed remotely.'],['You will need','Antistatic wrist strap, rail kit, labels, install USB (Ubuntu Server 24.04 LTS), the assigned IP address (10.0.10.21) and rack position (14U).']], n:['TIP','In a real company you file a change request and get it approved before the work, and record the rack position, IP and switch ports in the asset system.']},
+        dis:{t:'Getting ready', s:[['Where things stand','web-01 is running in the rack and an admin is connected remotely from a laptop. Take the service down safely, disconnect the cables, pull the server from the rack and recover its parts.'],['You will need','Approved change request, confirmed backup, cable label list and drive destruction log.']], c:'Before decommissioning, get the owner to confirm in writing that backups and service migration are complete.'}}
+};
+
+let lang = 'en';
+try { const s = localStorage.getItem('pcbench-lang'); if (s === 'ko' || s === 'en') lang = s; } catch (e) {}
+const INFO = new Proxy({}, {get:(_, k) => (lang === 'en' ? INFO_EN : INFO_KO)[k]});
+const COLNAME = new Proxy({}, {get:(_, k) => (lang === 'en' ? COLNAME_EN : COLNAME_KO)[k]});
+const UI = {
+  ko:{h1pc:'PC 분해·조립 실습', h1srv:'서버 구축 실습', title:'PC 분해·조립 실습', scnPC:'개인 PC', scnSRV:'회사 서버',
+    lab:{pc:{asm:'조립', dis:'분해'}, srv:{asm:'구축', dis:'철거'}},
+    hint:'드래그 회전 · 휠 확대 · 우클릭 이동 · 부품을 클릭하면 설명', steps:'작업 순서', back:'◀ 이전', auto:'▶ 자동 재생', pause:'❚❚ 일시 정지', speed:'속도', view:'시점 초기화',
+    enlarge:'확대', shrink:'작게', monitor:'모니터 화면', explore:'살펴보기', what:'무엇을 하나요', howIn:'장착·연결 방법', howOut:'분리 방법', how:'방법',
+    before:'Before you start', backBtn:'현재 단계로 돌아가기', caution:'주의', flow:'흐름', running:'진행 중', done:'완료', nextS:'다음', next:'다음: ', allDone:'모든 단계 완료',
+    noSignal:'신호 없음  ·  No Signal',
+    doneMsg:{pc:{asm:'조립 완료! 컴퓨터가 켜지고 입력·출력·네트워크가 모두 동작합니다. 위쪽의 분해 버튼으로 역순 분해를 해 보거나, 회사 서버 실습으로 넘어가 보세요.', dis:'분해 완료! 모든 부품이 작업대로 돌아왔습니다.'},
+             srv:{asm:'구축 완료! web-01 서버가 랙에서 동작하고, 관리자는 원격으로 접속해 관리합니다. 철거 버튼으로 반대 과정도 확인해 보세요.', dis:'철거 완료! 서버는 부품 회수가 끝나 반납·폐기를 기다립니다.'}},
+    toast:{pc:['CPU · 메모리 32GB · 그래픽카드 · SSD · USB · LAN 인식 완료', '전원 꺼짐 · 팬 정지'], srv:['CPU 2개 · 메모리 256GB · 디스크 4개 · 10GbE 링크 업', '서버 전원 꺼짐 · BMC는 대기 전력으로 동작 중']},
+    typeMsg:'키보드로 친 글자는 USB를 타고 CPU로 들어가고, CPU가 처리한 결과를 그래픽카드가 그려서 모니터로 보냅니다. 지금 이 문장이 바로 그 과정입니다.  ',
+    notepad:'입출력 테스트.txt — 메모장', netOk:'인터넷 연결됨 · 192.168.0.24', netNo:'네트워크 연결 없음', noKb:'키보드가 연결되지 않았습니다'},
+  en:{h1pc:'PC Build Bench', h1srv:'Server Room Lab', title:'PC Build Bench', scnPC:'Personal PC', scnSRV:'Company server',
+    lab:{pc:{asm:'Assemble', dis:'Disassemble'}, srv:{asm:'Build', dis:'Decommission'}},
+    hint:'Drag to rotate · scroll to zoom · right-drag to pan · click a part for details', steps:'Steps', back:'◀ Back', auto:'▶ Autoplay', pause:'❚❚ Pause', speed:'Speed', view:'Reset view',
+    enlarge:'Enlarge', shrink:'Shrink', monitor:'Monitor', explore:'Part details', what:'What it does', howIn:'How to install', howOut:'How to remove', how:'Steps',
+    before:'Before you start', backBtn:'Back to the current step', caution:'CAUTION', flow:'FLOW', running:'running', done:'done', nextS:'next', next:'Next: ', allDone:'All steps done',
+    noSignal:'No Signal',
+    doneMsg:{pc:{asm:'Build complete! The computer is on, and input, output and network are all working. Try Disassemble at the top to take it apart in reverse, or move on to the company server lab.', dis:'Disassembly complete! Every part is back on the bench.'},
+             srv:{asm:'Build complete! web-01 is running in the rack and the admin manages it remotely. Try Decommission to see the reverse process.', dis:'Decommission complete! The parts are recovered and the server is ready to be returned or scrapped.'}},
+    toast:{pc:['CPU · 32 GB memory · graphics card · SSD · USB · LAN detected', 'Powered off · fans stopped'], srv:['2 CPUs · 256 GB memory · 4 drives · 10GbE link up', 'Server off · BMC still running on standby power']},
+    typeMsg:'Every key you press travels over USB to the CPU, the CPU works out what to show, and the graphics card draws it and sends it to the monitor. This sentence is going through that exact path right now.  ',
+    notepad:'io-test.txt — Notepad', netOk:'Connected to internet · 192.168.0.24', netNo:'No network connection', noKb:'No keyboard connected'}
+};
+const tr = k => UI[lang][k];
+const stT = s => lang === 'en' ? s.t_en : s.t;
+const stSec = s => lang === 'en' ? s.sec_en : s.sec;
+const phTitle = k => lang === 'en' ? PH_EN[k] : PH[k].title;
 
 /* ================================================================ renderer & scene */
 const stage = document.getElementById('stage');
@@ -1128,12 +1413,11 @@ function drawTerm(c, ph, prog){
   }
   if (prog < 1 || Math.floor(now*2) % 2 === 0) { g.fillStyle = '#c9d1d9'; g.fillRect(cx + 2, cy - 23 - 9, 9, 18); }
 }
-function noSignal(c, text='신호 없음  ·  No Signal'){
+function noSignal(c, text=tr('noSignal')){
   const g = c.getContext('2d'); g.fillStyle = '#020304'; g.fillRect(0, 0, c.width, c.height);
   g.fillStyle = '#1a2230'; g.fillRect(c.width/2 - 190, c.height/2 - 34, 380, 68);
   g.fillStyle = '#9fb0c4'; g.font = `500 24px ${SANS}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, c.width/2, c.height/2); g.textAlign = 'left';
 }
-const TYPE_MSG = '키보드로 친 글자는 USB를 타고 CPU로 들어가고, CPU가 처리한 결과를 그래픽카드가 그려서 모니터로 보냅니다. 지금 이 문장이 바로 그 과정입니다.  ';
 function drawPC(){
   const c = pcCanvas, g = c.getContext('2d'), W = c.width, H = c.height;
   if (!actors.pc.monitor.on || power.pc < 0.5) { noSignal(c); return; }
@@ -1149,19 +1433,20 @@ function drawPC(){
   g.fillStyle = '#e4eaf0'; g.font = `500 22px ${SANS}`; g.fillText('14:01', W - 80, H - 20);
   const net = actors.pc.lan.on;
   g.fillStyle = net ? '#6fe08a' : '#ef8a5b'; g.beginPath(); g.arc(W - 330, H - 20, 6, 0, 7); g.fill();
-  g.fillStyle = '#c9d1d9'; g.font = `500 20px ${SANS}`; g.fillText(net ? '인터넷 연결됨 · 192.168.0.24' : '네트워크 연결 없음', W - 315, H - 20);
+  g.fillStyle = '#c9d1d9'; g.font = `500 20px ${SANS}`; g.fillText(net ? tr('netOk') : tr('netNo'), W - 315, H - 20);
   const wx = 50, wy = 40, ww = 860, wh = 380;
   g.fillStyle = '#f3f5f7'; g.fillRect(wx, wy, ww, wh); g.fillStyle = '#d9dee4'; g.fillRect(wx, wy, ww, 36);
-  g.fillStyle = '#20262d'; g.font = `600 22px ${SANS}`; g.fillText('입출력 테스트.txt — 메모장', wx + 16, wy + 18);
+  g.fillStyle = '#20262d'; g.font = `600 22px ${SANS}`; g.fillText(tr('notepad'), wx + 16, wy + 18);
+  const TYPE_MSG = tr('typeMsg');
   const typed = actors.pc.input.on ? Math.floor((t - 3)*13) % (TYPE_MSG.length + 30) : 0;
   const txt = TYPE_MSG.slice(0, Math.min(typed, TYPE_MSG.length));
   g.font = `500 30px ${SANS}`; g.fillStyle = '#1b2026';
   let line = '', ly = wy + 90; const lines = [];
-  for (const ch of txt) { if (g.measureText(line + ch).width > ww - 60) { lines.push(line); line = ''; } line += ch; }
+  for (const ch of txt) { if (g.measureText(line + ch).width > ww - 60) { const sp = line.lastIndexOf(' '); if (lang === 'en' && sp > 0) { lines.push(line.slice(0, sp)); line = line.slice(sp + 1); } else { lines.push(line); line = ''; } } line += ch; }
   lines.push(line);
   lines.forEach((l, i) => g.fillText(l, wx + 30, ly + i*46));
   if (Math.floor(now*2) % 2 === 0) { const lw = g.measureText(lines[lines.length - 1]).width; g.fillRect(wx + 32 + lw, ly + (lines.length - 1)*46 - 17, 3, 34); }
-  if (!actors.pc.input.on) { g.fillStyle = '#8a939c'; g.font = `500 26px ${SANS}`; g.fillText('키보드가 연결되지 않았습니다', wx + 30, wy + 76); }
+  if (!actors.pc.input.on) { g.fillStyle = '#8a939c'; g.font = `500 26px ${SANS}`; g.fillText(tr('noKb'), wx + 30, wy + 76); }
   g.fillStyle = 'rgba(255,255,255,.85)'; g.font = `500 20px ${MONO}`;
   if (net) { const kb = Math.floor((t - 3)*830); g.fillText(`↓ ${(kb*3.1/1024).toFixed(1)} MB   ↑ ${(kb/1024).toFixed(1)} MB`, wx, wy + wh + 34); }
 }
@@ -1225,35 +1510,35 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
 const sec = (h, p) => `<section><h3>${esc(h)}</h3><p>${esc(p)}</p></section>`;
 const specs = I => I.specs ? `<div class="specs">${I.specs.map(s => `<span>${esc(s)}</span>`).join('')}</div>` : '';
-const notes = I => (I.flow ? `<div class="note flow"><b>흐름</b><span>${esc(I.flow)}</span></div>` : '') + (I.note ? `<div class="note"><b>${esc(I.note[0])}</b><span>${esc(I.note[1])}</span></div>` : '') + (I.caution ? `<div class="note caution"><b>주의</b><span>${esc(I.caution)}</span></div>` : '');
-const INTRO = {
+const notes = I => (I.flow ? `<div class="note flow"><b>${tr('flow')}</b><span>${esc(I.flow)}</span></div>` : '') + (I.note ? `<div class="note"><b>${esc(I.note[0])}</b><span>${esc(I.note[1])}</span></div>` : '') + (I.caution ? `<div class="note caution"><b>${tr('caution')}</b><span>${esc(I.caution)}</span></div>` : '');
+const INTRO_KO = {
   pc:{asm:{t:'조립 준비', s:[['지금 상태','작업대 위에 부품 8가지가 놓여 있고, 케이스는 옆판이 열린 채 비어 있습니다. 본체를 조립한 뒤 모니터·키보드·마우스·네트워크·전원을 연결하고, 전원을 켜서 신호가 어떻게 흐르는지 확인합니다.'],['준비물','+2번 십자 드라이버, 써멀 그리스, 케이블 타이. 시작 전에 금속 케이스를 만져 몸의 정전기를 빼 주세요.']], n:['TIP','3D 화면의 부품을 클릭하면 순서와 상관없이 그 부품의 용도를 볼 수 있습니다.']},
        dis:{t:'분해 준비', s:[['지금 상태','완성된 컴퓨터가 켜져 있고 모니터·키보드·마우스·인터넷이 모두 연결되어 동작 중입니다. 분해는 조립의 역순입니다. 전원을 끊고, 바깥 연결을 뽑고, 바깥쪽 부품부터 안쪽 순서로 떼어 냅니다.'],['준비물','+2번 십자 드라이버, 나사를 담을 작은 그릇, 소독용 알코올과 천(써멀 그리스 청소용).']], c:'전원 코드가 꽂힌 상태로는 절대 내부 부품을 만지지 마세요.'}},
   srv:{asm:{t:'서버 구축 준비', s:[['지금 상태','새로 들어온 2U 랙 서버가 작업 테이블 위에 있습니다. 메모리와 디스크를 넣고, 랙 14U에 장착하고, 전원·네트워크를 연결한 뒤 Ubuntu Server를 설치해 원격으로 관리할 수 있는 상태까지 만듭니다.'],['준비물','정전기 방지 손목 밴드, 레일 키트, 라벨, 설치 USB(Ubuntu Server 24.04 LTS), 미리 받은 IP 주소(10.0.10.21)와 랙 위치(14U).']], n:['TIP','실제 회사에서는 작업 전에 작업 계획서(변경 요청)를 올려 승인을 받고, 랙 위치·IP·케이블 포트를 자산 관리 시스템에 기록합니다.']},
         dis:{t:'서버 철거 준비', s:[['지금 상태','web-01 서버가 랙에서 운영 중이고, 관리자는 노트북에서 원격으로 접속해 있습니다. 서비스를 안전하게 내리고, 케이블을 분리하고, 랙에서 빼낸 뒤 부품을 회수합니다.'],['준비물','작업 승인서, 백업 완료 확인, 라벨 목록, 디스크 파기 대장.']], c:'철거 전에 백업과 서비스 이전이 끝났는지 담당자에게 반드시 확인받으세요.'}}
 };
+const INTRO = new Proxy({}, {get:(_, k) => (lang === 'en' ? INTRO_EN : INTRO_KO)[k]});
 function renderInfo(){
   const total = steps.length;
   $('stepNo').textContent = `STEP ${String(cur).padStart(2, '0')} / ${total}`;
-  $('modePill').textContent = SCN[scen].label[mode];
+  $('modePill').textContent = tr('lab')[scen][mode];
   $('modePill').className = 'pill ' + (mode === 'asm' ? 'in' : 'out');
   let html = '';
   if (selected) {
     const I = INFO[selected];
-    $('infoTitle').textContent = I.name; $('infoEn').textContent = I.en; $('stepNo').textContent = '살펴보기';
-    html = sec('무엇을 하나요', I.role) + (I.in ? sec(I.hin || '장착·연결 방법', I.in) : '') + (I.out ? sec(I.hout || '분리 방법', I.out) : '') + specs(I) + notes(I) + `<button class="back" id="backBtn">현재 단계로 돌아가기</button>`;
+    $('infoTitle').textContent = I.name; $('infoEn').textContent = I.en; $('stepNo').textContent = tr('explore');
+    html = sec(tr('what'), I.role) + (I.in ? sec(I.hin || tr('howIn'), I.in) : '') + (I.out ? sec(I.hout || tr('howOut'), I.out) : '') + specs(I) + notes(I) + `<button class="back" id="backBtn">${tr('backBtn')}</button>`;
   } else if (cur === 0) {
     const it = INTRO[scen][mode];
-    $('infoTitle').textContent = it.t; $('infoEn').textContent = 'Before you start';
-    html = it.s.map(([h, p]) => sec(h, p)).join('') + (it.n ? `<div class="note"><b>${it.n[0]}</b><span>${esc(it.n[1])}</span></div>` : '') + (it.c ? `<div class="note caution"><b>주의</b><span>${esc(it.c)}</span></div>` : '');
+    $('infoTitle').textContent = it.t; $('infoEn').textContent = tr('before');
+    html = it.s.map(([h, p]) => sec(h, p)).join('') + (it.n ? `<div class="note"><b>${it.n[0]}</b><span>${esc(it.n[1])}</span></div>` : '') + (it.c ? `<div class="note caution"><b>${tr('caution')}</b><span>${esc(it.c)}</span></div>` : '');
   } else {
     const st = steps[cur - 1], I = INFO[st.info], isIn = st.acts[0][1];
-    $('infoTitle').textContent = st.t; $('infoEn').textContent = I.en;
+    $('infoTitle').textContent = stT(st); $('infoEn').textContent = I.en;
     const how = isIn ? (I.in || I.out) : (I.out || I.in);
-    html = sec('무엇을 하나요', I.role) + sec(isIn ? (I.hin || '방법') : (I.hout || '분리 방법'), how) + specs(I) + notes(I);
+    html = sec(tr('what'), I.role) + sec(isIn ? (I.hin || tr('how')) : (I.hout || tr('howOut')), how) + specs(I) + notes(I);
     if (cur === total) {
-      const msg = {pc:{asm:'조립 완료! 컴퓨터가 켜지고 입력·출력·네트워크가 모두 동작합니다. 위쪽의 분해 버튼으로 역순 분해를 해 보거나, 회사 서버 실습으로 넘어가 보세요.', dis:'분해 완료! 모든 부품이 작업대로 돌아왔습니다.'},
-                   srv:{asm:'구축 완료! web-01 서버가 랙에서 동작하고, 관리자는 원격으로 접속해 관리합니다. 철거 버튼으로 반대 과정도 확인해 보세요.', dis:'철거 완료! 서버는 부품 회수가 끝나 반납·폐기를 기다립니다.'}}[scen][mode];
+      const msg = tr('doneMsg')[scen][mode];
       html += `<div class="note"><b>DONE</b><span>${esc(msg)}</span></div>`;
     }
   }
@@ -1263,12 +1548,12 @@ function renderInfo(){
 function renderList(){
   const ol = $('stepList'); ol.innerHTML = '';
   steps.forEach((s, i) => {
-    if (s.sec) { const h = document.createElement('li'); h.className = 'sec'; h.textContent = s.sec; ol.appendChild(h); }
+    if (s.sec) { const h = document.createElement('li'); h.className = 'sec'; h.textContent = stSec(s); ol.appendChild(h); }
     const li = document.createElement('li');
     const running = anim && i === cur - 1;
     li.className = running ? 'now' : i < cur ? 'done' : (!anim && i === cur) ? 'now' : '';
-    const label = running ? '진행 중' : li.className === 'done' ? '완료' : li.className === 'now' ? '다음' : '';
-    li.innerHTML = `<button id="step-${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span>${esc(s.t)}</span><span class="st">${label}</span></button>`;
+    const label = running ? tr('running') : li.className === 'done' ? tr('done') : li.className === 'now' ? tr('nextS') : '';
+    li.innerHTML = `<button id="step-${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span>${esc(stT(s))}</span><span class="st">${label}</span></button>`;
     li.querySelector('button').onclick = () => jump(i + 1);
     ol.appendChild(li);
   });
@@ -1276,7 +1561,7 @@ function renderList(){
   $('progBar').style.width = (cur/steps.length*100) + '%';
   $('btnPrev').disabled = !!anim || cur === 0;
   $('btnNext').disabled = !!anim || cur >= steps.length;
-  $('nextLabel').textContent = cur >= steps.length ? '모든 단계 완료' : `다음: ${steps[cur].t}`;
+  $('nextLabel').textContent = cur >= steps.length ? tr('allDone') : tr('next') + stT(steps[cur]);
 }
 function refresh(){ renderInfo(); renderList(); }
 function next(){
@@ -1304,7 +1589,7 @@ function afterStep(){
   refresh();
   if (auto) { if (cur < steps.length) autoTimer = setTimeout(next, 1000/speed); else stopAuto(); }
 }
-function stopAuto(){ auto = false; clearTimeout(autoTimer); $('btnAuto').setAttribute('aria-pressed', 'false'); $('btnAuto').textContent = '▶ 자동 재생'; }
+function stopAuto(){ auto = false; clearTimeout(autoTimer); $('btnAuto').setAttribute('aria-pressed', 'false'); $('btnAuto').textContent = tr('auto'); }
 function setMode(m){
   if (anim) { anim = null; }
   stopAuto(); mode = m; steps = SCN[scen][m]; cur = 0; selected = null;
@@ -1316,8 +1601,7 @@ function setScenario(s){
   scen = s;
   worlds.pc.visible = s === 'pc'; worlds.srv.visible = s === 'srv';
   $('scnPC').setAttribute('aria-pressed', s === 'pc'); $('scnSRV').setAttribute('aria-pressed', s === 'srv');
-  $('modeAsm').textContent = SCN[s].label.asm; $('modeDis').textContent = SCN[s].label.dis;
-  if (s === 'pc') {
+    if (s === 'pc') {
     floorMat.map = benchTex; scene.fog.near = 220; scene.fog.far = 420; controls.maxDistance = 260;
     key.position.set(60, 120, 90); key.target.position.set(-10, 0, 10);
     Object.assign(key.shadow.camera, {left:-100, right:100, top:100, bottom:-100, near:10, far:340});
@@ -1329,8 +1613,8 @@ function setScenario(s){
     work.position.set(30, 150, 120); work.intensity = 6000; work.distance = 400;
   }
   floorMat.needsUpdate = true; key.shadow.camera.updateProjectionMatrix();
-  document.querySelector('.brand h1').textContent = s === 'pc' ? 'PC 분해·조립 실습' : '서버 구축 실습';
-  scrBig = false; $('scr').classList.remove('big'); $('scrSize').textContent = '확대';
+  scrBig = false; $('scr').classList.remove('big');
+  applyLang();
   setMode('asm');
   const [t, p] = viewVec('overview'); controls.target.copy(t); camera.position.copy(p); camTween = null;
 }
@@ -1345,11 +1629,24 @@ $('speedSel').onchange = e => { speed = parseFloat(e.target.value); };
 $('btnAuto').onclick = () => {
   if (auto) { stopAuto(); return; }
   if (cur >= steps.length) { applyInstant(0); cur = 0; refresh(); }
-  auto = true; $('btnAuto').setAttribute('aria-pressed', 'true'); $('btnAuto').textContent = '❚❚ 일시 정지';
+  auto = true; $('btnAuto').setAttribute('aria-pressed', 'true'); $('btnAuto').textContent = tr('pause');
   if (!anim) next();
 };
 let scrBig = false;
-$('scrSize').onclick = () => { scrBig = !scrBig; $('scr').classList.toggle('big', scrBig); $('scrSize').textContent = scrBig ? '작게' : '확대'; };
+$('scrSize').onclick = () => { scrBig = !scrBig; $('scr').classList.toggle('big', scrBig); $('scrSize').textContent = scrBig ? tr('shrink') : tr('enlarge'); };
+function applyLang(){
+  document.documentElement.lang = lang; document.title = tr('title');
+  $('h1').textContent = scen === 'pc' ? tr('h1pc') : tr('h1srv');
+  $('scnPC').textContent = tr('scnPC'); $('scnSRV').textContent = tr('scnSRV');
+  $('modeAsm').textContent = tr('lab')[scen].asm; $('modeDis').textContent = tr('lab')[scen].dis;
+  $('lnEN').setAttribute('aria-pressed', lang === 'en'); $('lnKO').setAttribute('aria-pressed', lang === 'ko');
+  $('hint').textContent = tr('hint'); $('listH').textContent = tr('steps'); $('btnPrev').textContent = tr('back'); $('speedLab').textContent = tr('speed'); $('btnView').textContent = tr('view');
+  $('btnAuto').textContent = auto ? tr('pause') : tr('auto'); $('scrSize').textContent = scrBig ? tr('shrink') : tr('enlarge');
+  legendKey = ''; lastDraw = 0;
+}
+function setLang(l){ lang = l; try { localStorage.setItem('pcbench-lang', l); } catch (e) {} applyLang(); refresh(); }
+$('lnEN').onclick = () => setLang('en');
+$('lnKO').onclick = () => setLang('ko');
 window.addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('select')) return;
   if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
@@ -1360,9 +1657,7 @@ function showToast(sc, on){
   const t = $('toast');
   t.classList.toggle('off', !on);
   $('toastK').textContent = on ? 'POST OK' : 'POWER OFF';
-  $('toastT').textContent = sc === 'pc'
-    ? (on ? 'CPU · 메모리 32GB · 그래픽카드 · SSD · USB · LAN 인식 완료' : '전원 꺼짐 · 팬 정지')
-    : (on ? 'CPU 2개 · 메모리 256GB · 디스크 4개 · 10GbE 링크 업' : '서버 전원 꺼짐 · BMC는 대기 전력으로 동작 중');
+  $('toastT').textContent = tr('toast')[sc][on ? 0 : 1];
   t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3800);
 }
 
@@ -1445,14 +1740,14 @@ function frame(){
   if (now - lastDraw > 1/15) {
     lastDraw = now;
     let src = null, title = '';
-    if (scen === 'pc') { drawPC(); pcTex.needsUpdate = true; if (actors.pc.monitor.on) { src = pcCanvas; title = '모니터 화면'; } }
+    if (scen === 'pc') { drawPC(); pcTex.needsUpdate = true; if (actors.pc.monitor.on) { src = pcCanvas; title = tr('monitor'); } }
     else {
       drawConsole(); consTex.needsUpdate = true;
       if (S.phase) {
         const ph = PH[S.phase];
         if (ph.where === 'laptop') { drawTerm(lapCanvas, ph, S.prog); src = lapCanvas; }
         else src = consCanvas;
-        title = ph.title;
+        title = phTitle(S.phase);
       }
     }
     scrEl.hidden = !src;
