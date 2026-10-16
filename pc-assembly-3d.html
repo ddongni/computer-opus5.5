@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
+<title>PC 분해·조립 실습</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: full-height service bench — 3D workbench on the left, service-manual panel on the right; stacks on phones */
+:root{
+  color-scheme: dark;
+  --bg:#0e1319; --panel:#141b23; --raise:#1b2430; --line:#263240;
+  --fg:#e4eaf0; --muted:#8d9aa9; --accent:#f0b23e; --accent-ink:#1b1405; --done:#63c2a4; --warn:#ef8a5b;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.65;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 400px;grid-template-rows:auto minmax(0,1fr)}
+header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;
+  padding-block:10px;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));
+  background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:12px;min-width:0}
+.brand h1{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.brand .sub{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button:focus-visible,.btn:focus-visible,.steps button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+#stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--bg)}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.hint{position:absolute;left:14px;bottom:12px;font-family:var(--f-mono);font-size:11.5px;color:var(--muted);letter-spacing:.04em;
+  background:color-mix(in srgb,var(--bg) 70%,transparent);padding:5px 10px;border-radius:6px;pointer-events:none}
+.tag{position:absolute;left:0;top:0;pointer-events:none;display:flex;align-items:center;gap:8px;transform:translate(-9999px,0);
+  font-size:13px;font-weight:600;white-space:nowrap}
+.tag .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 30%,transparent)}
+.tag .txt{background:var(--accent);color:var(--accent-ink);padding:3px 9px;border-radius:5px}
+.toast{position:absolute;left:50%;top:16px;transform:translateX(-50%);background:var(--raise);border:1px solid var(--line);
+  padding:9px 16px;border-radius:8px;font-size:14px;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px)}
+.toast b{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:var(--done)}
+.toast.off b{color:var(--warn)}
+
+aside{display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:1px solid var(--line)}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding-block:20px 8px;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(20px,env(safe-area-inset-right,0px));padding-left:22px}
+.meta{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;color:var(--muted)}
+.meta .pill{border:1px solid var(--line);border-radius:999px;padding:1px 9px;letter-spacing:.06em}
+.meta .pill.in{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.meta .pill.out{color:var(--done);border-color:color-mix(in srgb,var(--done) 45%,transparent)}
+.card h2{margin:8px 0 0;font-size:26px;line-height:1.25;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+.card .en{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);margin-top:2px}
+.card section{margin-top:18px}
+.card h3{margin:0 0 4px;font-size:11.5px;font-family:var(--f-mono);font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.card p{margin:0;max-width:62ch}
+.specs{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+.specs span{font-family:var(--f-mono);font-size:12px;background:var(--raise);border:1px solid var(--line);padding:2px 8px;border-radius:5px;font-variant-numeric:tabular-nums}
+.note{margin-top:16px;padding:10px 12px;border-radius:8px;background:var(--raise);font-size:14px;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}
+.note b{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;padding-top:3px;color:var(--done)}
+.note.caution b{color:var(--warn)}
+.back{margin-top:14px;background:none;border:0;padding:0;color:var(--accent);cursor:pointer;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+
+.listhead{margin:26px 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+.listhead h3{margin:0;font-size:11.5px;font-family:var(--f-mono);font-weight:500;letter-spacing:.14em;color:var(--muted)}
+.listhead span{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:3px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.steps button{width:100%;display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:8px;text-align:left;
+  background:transparent;border:0;border-radius:6px;padding:6px 8px;cursor:pointer;color:var(--muted);font-size:14px}
+.steps button:hover{background:var(--raise)}
+.steps .n{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums}
+.steps .st{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em}
+.steps li.done button{color:var(--fg)}
+.steps li.done .st{color:var(--done)}
+.steps li.now button{background:var(--raise);color:var(--fg);box-shadow:inset 2px 0 0 var(--accent)}
+.steps li.now .st{color:var(--accent)}
+
+.controls{border-top:1px solid var(--line);padding-block:12px 14px;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));display:grid;gap:10px;background:var(--panel)}
+.row{display:flex;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--raise);border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;font-size:14px;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--muted)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{flex:1;background:var(--accent);color:var(--accent-ink);border-color:var(--accent);display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0}
+.btn.primary .lab{overflow:hidden;text-overflow:ellipsis}
+.btn.primary kbd{font-family:var(--f-mono);font-size:11px;opacity:.7}
+.btn.small{padding:6px 10px;font-weight:500;font-size:13px}
+.btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+select{background:var(--raise);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
+.row .grow{flex:1}
+
+@media (max-width: 820px){
+  body{overflow:hidden}
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 46svh minmax(0,1fr)}
+  aside{border-left:0;border-top:1px solid var(--line)}
+  .brand .sub{display:none}
+  .card h2{font-size:22px}
+  .scroll{padding-left:max(16px,env(safe-area-inset-left,0px))}
+  .hint{display:none}
+}
+@media (prefers-reduced-motion: reduce){ .bar i{transition:none} }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="brand"><h1>PC 분해·조립 실습</h1><span class="sub">Service bench · 3D</span></div>
+    <div class="seg" role="group" aria-label="모드">
+      <button id="modeAsm" aria-pressed="true">조립</button>
+      <button id="modeDis" aria-pressed="false">분해</button>
+    </div>
+  </header>
+
+  <div id="stage">
+    <div class="tag" id="tag"><span class="dot"></span><span class="txt" id="tagText"></span></div>
+    <div class="toast" id="toast" hidden><b id="toastK">POST OK</b><span id="toastT"></span></div>
+    <div class="hint">드래그 회전 · 휠 확대 · 우클릭 이동 · 부품을 클릭하면 설명</div>
+  </div>
+
+  <aside>
+    <div class="scroll">
+      <div class="card" id="card">
+        <div class="meta"><span id="stepNo">STEP 00 / 10</span><span class="pill in" id="modePill">조립</span></div>
+        <h2 id="infoTitle">조립 준비</h2>
+        <div class="en" id="infoEn"></div>
+        <div id="infoBody"></div>
+      </div>
+      <div class="listhead"><h3>작업 순서</h3><span id="progTxt">0 / 10</span></div>
+      <div class="bar"><i id="progBar"></i></div>
+      <ol class="steps" id="stepList"></ol>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <button class="btn" id="btnPrev" aria-label="이전 단계 되돌리기">◀ 이전</button>
+        <button class="btn primary" id="btnNext"><span class="lab" id="nextLabel">다음</span><kbd>→</kbd></button>
+      </div>
+      <div class="row">
+        <button class="btn small" id="btnAuto" aria-pressed="false">▶ 자동 재생</button>
+        <label class="grow" for="speedSel" style="text-align:right;font-size:13px;color:var(--muted)">속도</label>
+        <select id="speedSel"><option value="0.6">0.6×</option><option value="1" selected>1×</option><option value="1.8">1.8×</option></select>
+        <button class="btn small" id="btnView">시점 초기화</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+await Promise.race([document.fonts.load('600 20px "IBM Plex Mono"').catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
+const V = THREE.Vector3;
+const D = Math.PI / 180;
+
+/* ---------------------------------------------------------------- content */
+const INFO = {
+  mobo:{name:'메인보드',en:'Motherboard · ATX',
+    role:'모든 부품이 꽂히는 큰 기판입니다. CPU·메모리·그래픽카드·SSD가 서로 데이터를 주고받는 통로와, 각 부품에 전기를 나눠 주는 회로가 여기에 모여 있습니다. 컴퓨터의 도로망이자 배전반이라고 보면 됩니다.',
+    in:'케이스 안쪽의 스탠드오프(금색 받침 나사) 위치를 메인보드 구멍에 맞춥니다. 뒤쪽 I/O 포트가 케이스 뒷면 구멍에 딱 맞도록 밀어 넣은 뒤, 나사 9개를 대각선 순서로 가볍게 조입니다.',
+    out:'케이블과 부품을 모두 떼어 낸 뒤 나사 9개를 풉니다. 보드를 살짝 앞으로 당겨 I/O 포트를 뒷면 구멍에서 빼고, 가장자리를 잡아 꺼냅니다.',
+    specs:['ATX 305×244mm','LGA 소켓','DDR5 슬롯 ×4','PCIe x16','M.2 슬롯'],
+    note:['TIP','실제 조립에서는 CPU·쿨러·메모리·M.2를 메인보드에 먼저 꽂고 나서 케이스에 넣는 경우가 많습니다. 손이 들어갈 공간이 넓어 훨씬 편합니다.']},
+  cpu:{name:'CPU',en:'Central Processing Unit',
+    role:'프로그램의 명령을 하나하나 계산하고 처리하는 컴퓨터의 두뇌입니다. 1초에 수십억 번 연산하며, 코어가 많을수록 여러 작업을 동시에 빠르게 처리합니다.',
+    in:'소켓 레버를 젖혀 덮개를 엽니다. CPU 모서리의 금색 삼각형을 소켓의 삼각형 표시와 맞춘 뒤 수직으로 살며시 내려놓고, 덮개를 닫고 레버를 걸어 고정합니다.',
+    out:'쿨러를 먼저 떼어 낸 뒤 레버를 풀고 덮개를 엽니다. CPU 옆면을 잡고 수직으로 들어 올립니다. 남은 써멀 그리스는 소독용 알코올로 닦아 냅니다.',
+    specs:['8~24코어','3~5.5GHz','TDP 65~125W'],
+    caution:'소켓 핀은 머리카락처럼 가늘어서 하나만 휘어도 고장 납니다. CPU를 누르거나 문지르지 마세요.'},
+  cooler:{name:'CPU 쿨러',en:'Tower Air Cooler',
+    role:'CPU에서 나는 열을 구리 히트파이프가 위쪽 방열핀으로 옮기고, 팬이 바람으로 식힙니다. 열을 빼지 못하면 CPU가 스스로 속도를 낮추거나(스로틀링) 꺼져 버립니다.',
+    in:'CPU 가운데에 써멀 그리스를 콩알만큼 짭니다. 쿨러를 수직으로 내려놓고 나사를 대각선 순서로 조금씩 번갈아 조여 고르게 누르게 합니다. 팬 케이블은 메인보드의 CPU_FAN 단자에 꽂습니다.',
+    out:'팬 케이블을 뽑고 나사를 대각선 순서로 풉니다. 그리스가 접착제처럼 붙어 있으니 좌우로 살짝 비틀어 떼어 냅니다.',
+    specs:['히트파이프 4개','120mm 팬','방열핀 34장'],
+    note:['TIP','써멀 그리스는 CPU와 쿨러 사이의 미세한 틈을 메워 열이 잘 전달되게 합니다. 너무 많이 바르면 오히려 옆으로 넘칩니다.']},
+  ram:{name:'메모리 (RAM)',en:'DDR5 DIMM × 2',
+    role:'CPU가 지금 쓰고 있는 데이터를 잠깐 올려 두는 작업대입니다. SSD보다 훨씬 빠르지만 전원을 끄면 내용이 사라집니다. 용량이 클수록 프로그램을 여러 개 띄워도 느려지지 않습니다.',
+    in:'슬롯 끝의 걸쇠를 엽니다. 메모리 아래쪽 홈(노치)을 슬롯 돌기와 맞추고, 양쪽 끝을 엄지로 수직으로 눌러 "딸깍" 소리와 함께 걸쇠가 닫히게 합니다. 2개라면 보통 CPU에서 두 번째·네 번째 슬롯(A2·B2)에 꽂습니다.',
+    out:'슬롯 끝 걸쇠를 누르면 메모리가 살짝 올라옵니다. 그대로 수직으로 뽑습니다.',
+    specs:['DDR5-5600','16GB × 2','듀얼 채널']},
+  m2:{name:'M.2 SSD',en:'NVMe Solid State Drive',
+    role:'운영체제와 프로그램, 사진·문서 같은 파일을 영구히 저장합니다. 전원을 꺼도 지워지지 않습니다. 메인보드에 직접 꽂혀 PCIe로 통신하므로 예전 하드디스크보다 수십 배 빠릅니다.',
+    in:'M.2 슬롯에 약 30도 각도로 비스듬히 밀어 넣은 뒤, 끝을 눌러 눕히고 고정 나사(또는 래치)로 잠급니다. 방열판이 있다면 보호 필름을 떼고 덮습니다.',
+    out:'고정 나사를 풀면 SSD가 비스듬히 튀어 오릅니다. 그 각도 그대로 슬롯에서 뽑습니다.',
+    specs:['M.2 2280','PCIe 4.0 ×4','1TB · 7,000MB/s']},
+  psu:{name:'파워서플라이 (PSU)',en:'Power Supply Unit',
+    role:'벽 콘센트의 교류 220V를 부품이 쓰는 직류 12V·5V·3.3V로 바꿔 공급합니다. 전기가 흔들리면 컴퓨터 전체가 불안정해지므로 품질이 중요한 부품입니다.',
+    in:'케이스 아래쪽 뒤편 자리에 밀어 넣습니다. 케이스 바닥에 먼지 필터가 있으면 팬이 아래를 향하게 두고, 케이스 뒤쪽에서 나사 4개로 고정합니다.',
+    out:'전원 코드와 부품에 꽂힌 케이블을 모두 뺀 뒤, 케이스 뒤쪽 나사 4개를 풀고 안쪽으로 당겨 꺼냅니다.',
+    specs:['850W','80 PLUS Gold','풀 모듈러'],
+    caution:'파워서플라이 내부 커패시터에는 전원을 뽑은 뒤에도 전기가 남아 있습니다. 본체 덮개는 절대 열지 마세요.'},
+  gpu:{name:'그래픽카드 (GPU)',en:'Graphics Card',
+    role:'화면에 보일 이미지를 계산합니다. 수천 개의 작은 코어가 동시에 일해서 게임의 3D 그래픽, 영상 편집, AI 연산처럼 같은 계산을 대량으로 반복하는 일에 강합니다. 모니터 케이블도 여기에 꽂습니다.',
+    in:'케이스 뒤쪽 슬롯 덮개 2~3개를 뗍니다. CPU에 가장 가까운 PCIe x16 슬롯에 금색 단자를 맞추고, 슬롯 걸쇠가 "딸깍" 잠길 때까지 수직으로 누른 뒤 브래킷을 나사로 고정합니다.',
+    out:'보조전원 케이블을 먼저 뽑고 브래킷 나사를 풉니다. 슬롯 끝의 걸쇠를 누른 채로 카드를 수직으로 당겨 뺍니다.',
+    specs:['PCIe 4.0 x16','12GB GDDR6X','3팬 · 2.5슬롯'],
+    note:['TIP','무거운 카드는 시간이 지나며 처질 수 있어서 받침대(GPU 지지대)를 함께 쓰기도 합니다.']},
+  cables:{name:'전원 케이블',en:'24-pin ATX · 8-pin EPS · 8-pin PCIe',
+    role:'파워서플라이의 전기를 각 부품으로 나릅니다. 메인보드에는 24핀, CPU에는 8핀(EPS), 그래픽카드에는 8핀(PCIe) 커넥터가 들어갑니다.',
+    in:'커넥터는 맞는 방향으로만 들어가도록 모양이 잡혀 있습니다. 걸쇠(클립) 방향을 확인하고 끝까지 밀어 "딸깍" 걸리게 합니다. 남는 케이블은 메인보드 뒤쪽으로 돌려 정리하면 공기 흐름이 좋아집니다.',
+    out:'커넥터의 걸쇠를 엄지로 누른 상태에서 커넥터 몸통을 잡고 뽑습니다. 전선을 잡아당기면 단자가 빠질 수 있습니다.',
+    specs:['ATX 24핀 → 메인보드','EPS 8핀 → CPU','PCIe 8핀 → GPU'],
+    hin:'연결 방법',hout:'분리 방법'},
+  panel:{name:'측면 패널',en:'Tempered Glass Side Panel',
+    role:'내부 부품을 먼지와 충격에서 지키고, 케이스의 공기 흐름(앞에서 들어와 뒤·위로 나가는 길)이 설계대로 유지되게 합니다.',
+    in:'패널을 케이스 걸림 홈에 맞춰 세우고 손나사 4개로 고정합니다. 손나사는 손으로만 조여도 충분합니다.',
+    out:'손나사를 풀면서 다른 손으로 패널을 받칩니다. 떼어 낸 유리는 바닥에 눕혀 둡니다.',
+    specs:['강화유리 4mm','손나사 ×4'],
+    caution:'강화유리는 모서리에 충격을 받으면 한 번에 깨집니다. 세워 두지 말고 눕혀서 보관하세요.',
+    hin:'닫는 방법',hout:'여는 방법'},
+  power:{name:'전원',en:'Power On · POST',
+    role:'모든 부품이 연결되면 전원을 넣어 정상 동작을 확인합니다. 켜지는 순간 메인보드가 CPU·메모리·그래픽카드를 차례로 점검하는데, 이 과정을 POST(Power-On Self-Test)라고 합니다.',
+    in:'전원 코드와 모니터를 연결하고 파워서플라이 뒤쪽 스위치를 켭니다(I). 케이스 전원 버튼을 누르면 팬이 돌기 시작하고, 화면에 바이오스 로고가 뜨면 성공입니다.',
+    out:'운영체제에서 시스템 종료를 한 뒤 파워서플라이 스위치를 끄고(O) 전원 코드를 뽑습니다. 전원 버튼을 5초 정도 눌러 남은 전기를 빼고, 케이스 금속 부분을 만져 몸의 정전기를 없앱니다.',
+    specs:['POST','BIOS / UEFI'],
+    hin:'켜는 방법',hout:'끄는 방법'},
+  case:{name:'케이스',en:'Mid-Tower Case',
+    role:'모든 부품을 고정하는 뼈대입니다. 앞쪽 팬이 찬 공기를 빨아들이고 뒤쪽 팬이 뜨거운 공기를 내보내 내부 온도를 낮춥니다. 금색 스탠드오프가 메인보드를 케이스 벽에서 띄워 합선을 막습니다.',
+    in:'이 실습에서 케이스는 작업대에 고정되어 있습니다.',out:'이 실습에서 케이스는 작업대에 고정되어 있습니다.',
+    specs:['미들타워','흡기 팬 ×2','배기 팬 ×1']}
+};
+const ASM = [
+  {id:'mobo',dir:'in',title:'메인보드 장착'},
+  {id:'cpu',dir:'in',title:'CPU 장착'},
+  {id:'cooler',dir:'in',title:'CPU 쿨러 장착'},
+  {id:'ram',dir:'in',title:'메모리 장착'},
+  {id:'m2',dir:'in',title:'M.2 SSD 장착'},
+  {id:'psu',dir:'in',title:'파워서플라이 장착'},
+  {id:'gpu',dir:'in',title:'그래픽카드 장착'},
+  {id:'cables',dir:'in',title:'전원 케이블 연결'},
+  {id:'panel',dir:'in',title:'측면 패널 닫기'},
+  {id:'power',dir:'in',title:'전원 켜기'}
+];
+const DIS = [
+  {id:'power',dir:'out',title:'전원 끄기 · 방전'},
+  {id:'panel',dir:'out',title:'측면 패널 열기'},
+  {id:'cables',dir:'out',title:'전원 케이블 분리'},
+  {id:'gpu',dir:'out',title:'그래픽카드 분리'},
+  {id:'psu',dir:'out',title:'파워서플라이 분리'},
+  {id:'m2',dir:'out',title:'M.2 SSD 분리'},
+  {id:'ram',dir:'out',title:'메모리 분리'},
+  {id:'cooler',dir:'out',title:'CPU 쿨러 분리'},
+  {id:'cpu',dir:'out',title:'CPU 분리'},
+  {id:'mobo',dir:'out',title:'메인보드 분리'}
+];
+
+/* ---------------------------------------------------------------- scene */
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e1319);
+scene.fog = new THREE.Fog(0x0e1319, 220, 420);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(38, 1, 1, 1200);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.minDistance = 12;
+controls.maxDistance = 260;
+
+scene.add(new THREE.HemisphereLight(0xd6e6ff, 0x1a1510, 0.55));
+const key = new THREE.DirectionalLight(0xffffff, 2.4);
+key.position.set(60, 120, 90);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, {left:-95, right:95, top:95, bottom:-95, near:10, far:320});
+key.shadow.bias = -0.0004; key.shadow.normalBias = 0.04;
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xa9c4ff, 0.9); rim.position.set(-90, 70, -50); scene.add(rim);
+const work = new THREE.PointLight(0xfff1dc, 420, 90, 1.6); work.position.set(4, 34, 24); scene.add(work);
+const glow = new THREE.PointLight(0x9fd8ff, 0, 40, 1.8); glow.position.set(-4, 28, 0); scene.add(glow);
+
+/* ---------------------------------------------------------------- helpers */
+const mat = (color, r=0.6, m=0.1, extra={}) => new THREE.MeshStandardMaterial(Object.assign({color, roughness:r, metalness:m}, extra));
+function box(parent, w, h, d, material, x=0, y=0, z=0){
+  const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+  o.position.set(x, y, z); parent.add(o); return o;
+}
+function cylZ(parent, r, len, material, x, y, z, seg=24){
+  const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg).rotateX(Math.PI/2), material);
+  o.position.set(x, y, z); parent.add(o); return o;
+}
+function canvasTex(w, h, draw){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+const MONO = '"IBM Plex Mono", Menlo, monospace';
+const rgbMats = [];
+function rgbMat(offset){ const m = mat(0x111418, 0.4, 0.1, {emissive:0x000000}); m.userData.keepEmissive = true; m.userData.hue = offset; rgbMats.push(m); return m; }
+
+const fans = [];
+function makeFan(d, depth, frameCol=0x1b1f25, bladeCol=0x2a3038, spin=24){
+  const g = new THREE.Group(), rotor = new THREE.Group(); g.add(rotor);
+  const fm = mat(frameCol, 0.65, 0.2), bm = mat(bladeCol, 0.45, 0.1, {side:THREE.DoubleSide});
+  const bw = d * 0.07;
+  box(g, d, bw, depth, fm, 0, (d-bw)/2, 0); box(g, d, bw, depth, fm, 0, -(d-bw)/2, 0);
+  box(g, bw, d-2*bw, depth, fm, (d-bw)/2, 0, 0); box(g, bw, d-2*bw, depth, fm, -(d-bw)/2, 0, 0);
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(d*0.47, d*0.47, depth, 40, 1, true).rotateX(Math.PI/2), mat(frameCol, 0.65, 0.2, {side:THREE.DoubleSide}));
+  g.add(ring);
+  for (const a of [45, 135, 225, 315]) {
+    const s = box(g, d*0.62, 0.15, 0.15, fm, 0, 0, -depth/2 + 0.1);
+    s.rotation.z = a * D; s.position.set(Math.cos(a*D)*d*0.31*0.9, Math.sin(a*D)*d*0.31*0.9, -depth/2 + 0.1);
+  }
+  cylZ(rotor, d*0.16, depth*0.8, mat(0x15181c, 0.4, 0.3), 0, 0, 0.05);
+  for (let i = 0; i < 7; i++) {
+    const piv = new THREE.Group(); piv.rotation.z = i * Math.PI * 2 / 7;
+    const b = box(piv, d*0.3, d*0.15, 0.1, bm, d*0.3, 0, 0.05); b.rotation.x = 0.5;
+    rotor.add(piv);
+  }
+  fans.push({rotor, spin});
+  return g;
+}
+
+/* ---------------------------------------------------------------- bench */
+const benchTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#1b2631'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#26394a'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+  g.strokeStyle = 'rgba(46,66,84,.45)'; g.lineWidth = 1;
+  for (let i = 1; i < 10; i++) { g.beginPath(); g.moveTo(i*w/10, 0); g.lineTo(i*w/10, h); g.moveTo(0, i*h/10); g.lineTo(w, i*h/10); g.stroke(); }
+});
+benchTex.wrapS = benchTex.wrapT = THREE.RepeatWrapping; benchTex.repeat.set(40, 40);
+const bench = new THREE.Mesh(new THREE.PlaneGeometry(400, 400).rotateX(-Math.PI/2), mat(0xffffff, 0.92, 0.0, {map:benchTex}));
+bench.receiveShadow = true; bench.userData.noPick = true; scene.add(bench);
+
+/* ---------------------------------------------------------------- case */
+const CY = 1.5;
+const caseG = new THREE.Group(); caseG.position.y = CY; scene.add(caseG);
+const steel = mat(0x262c34, 0.42, 0.65), steelIn = mat(0x2d343d, 0.55, 0.5);
+const holeTex = (rx, ry) => {
+  const t = canvasTex(128, 128, (g, w, h) => {
+    g.fillStyle = '#2a3038'; g.fillRect(0, 0, w, h); g.fillStyle = '#07090b';
+    for (let y = 0; y < h; y += 16) for (let x = (y/16 % 2) * 8; x < w + 8; x += 16) { g.beginPath(); g.arc(x, y + 8, 5.2, 0, 7); g.fill(); }
+  });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); return t;
+};
+box(caseG, 45, 0.8, 21, steel, 0, 0.4, 0);
+box(caseG, 45, 0.8, 21, mat(0xffffff, 0.5, 0.55, {map:holeTex(14, 7)}), 0, 45.6, 0);
+box(caseG, 45, 46, 0.8, steelIn, 0, 23, -10.1);
+box(caseG, 0.8, 46, 21, steel, 22.1, 23, 0);
+box(caseG, 1.2, 46, 21, mat(0xffffff, 0.55, 0.5, {map:holeTex(6, 14)}), 23.1, 23, 0);
+box(caseG, 0.8, 46, 21, steel, -22.1, 23, 0);
+const btn = cylZ(caseG, 0.75, 0.5, mat(0x9aa3ad, 0.3, 0.9), 23.85, 43.4, 6.5); btn.rotation.y = Math.PI/2;
+const ledMat = mat(0x111418, 0.4, 0.1, {emissive:0x000000}); ledMat.userData.keepEmissive = true;
+box(caseG, 0.25, 34, 0.5, ledMat, 23.8, 23, -9.6);
+// rear panel detail
+const blackM = mat(0x07090b, 0.8, 0.1);
+box(caseG, 0.25, 16.5, 4.2, blackM, -22.6, 33.75, -7.35);
+for (let i = 0; i < 7; i++) {
+  const y = 25.25 - i * 2.03;
+  box(caseG, 0.25, 1.5, 11.5, i < 3 ? blackM : mat(0xb4bcc6, 0.35, 0.85), -22.6, y, -2);
+}
+box(caseG, 0.25, 8.2, 14.5, blackM, -22.6, 5.1, -1);
+// fans
+const rearFan = makeFan(12, 2.5, 0x1b1f25, 0x2a3038, 20); rearFan.rotation.y = Math.PI/2; rearFan.position.set(-20.4, 36, 0.5); caseG.add(rearFan);
+for (const y of [12, 26]) { const f = makeFan(12, 2.5, 0x1b1f25, 0x2a3038, 20); f.rotation.y = Math.PI/2; f.position.set(20.3, y, 0); caseG.add(f); }
+// feet, grommets, standoffs
+for (const [x, z] of [[18, 8], [-18, 8], [18, -8], [-18, -8]]) box(caseG, 4, 1.5, 3, mat(0x111316, 0.9, 0), x, -0.75, z);
+for (const y of [15, 27, 39]) box(caseG, 2.4, 5, 0.3, mat(0x0c0e10, 0.95, 0), 5.6, y, -9.55);
+const MO = new V(-9.1, 30.25, -9.2);
+const HOLES = [[-11, 14.2], [-1, 14.2], [10.9, 14.2], [-11, 3.5], [-1, 3.5], [10.9, 3.5], [-11, -14.2], [-1, -14.2], [10.9, -14.2]];
+const brass = mat(0xc9a660, 0.35, 0.9);
+for (const [x, y] of HOLES) cylZ(caseG, 0.32, 0.6, brass, MO.x + x, MO.y + y - CY, -9.4, 12);
+caseG.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.userData.partId = 'case'; } });
+
+/* ---------------------------------------------------------------- parts */
+const parts = {};
+function reg(id, group, inPos, inRot, stPos, stRot, approach, lift=18){
+  scene.add(group);
+  const p = {id, group, inPos, inQ:new THREE.Quaternion().setFromEuler(new THREE.Euler(...inRot)),
+    stPos, stQ:new THREE.Quaternion().setFromEuler(new THREE.Euler(...stRot)), dir:new V(0, 0, 1), approach, lift, mats:[], hl:-1};
+  group.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = o.receiveShadow = true; o.userData.partId = id;
+    for (const m of (Array.isArray(o.material) ? o.material : [o.material])) if (!m.userData.keepEmissive && !p.mats.includes(m)) p.mats.push(m);
+  });
+  parts[id] = p; return p;
+}
+const M = (x, y, z) => new V(MO.x + x, MO.y + y, MO.z + z);
+
+/* motherboard */
+{
+  const g = new THREE.Group();
+  const W = 976, H = 1220, sx = W/24.4, sy = H/30.5, X = x => (x + 12.2)*sx, Y = y => (15.25 - y)*sy;
+  const tex = canvasTex(W, H, (c) => {
+    c.fillStyle = '#1a1f26'; c.fillRect(0, 0, W, H);
+    let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    c.lineWidth = 2;
+    for (let i = 0; i < 320; i++) {
+      c.strokeStyle = rnd() < 0.5 ? 'rgba(74,92,108,.32)' : 'rgba(60,76,90,.25)';
+      let x = rnd()*W, y = rnd()*H; c.beginPath(); c.moveTo(x, y);
+      for (let k = 0; k < 4; k++) { if (rnd() < 0.5) x += (rnd() - 0.5)*240; else y += (rnd() - 0.5)*240; c.lineTo(x, y); }
+      c.stroke();
+    }
+    c.fillStyle = 'rgba(228,234,240,.78)';
+    const t = (s, x, y, size=22) => { c.font = `600 ${size}px ${MONO}`; c.fillText(s, X(x), Y(y)); };
+    t('CPU1', -6.4, 2.4); t('DIMM_A1', 4.2, -1.4, 15); t('A2', 5.9, -0.6, 15); t('B1', 7.1, -1.4, 15); t('B2', 8.3, -0.6, 15);
+    t('PCIE_1  x16', -10.6, -2.0); t('PCIE_2 x1', -11.6, -6.6, 18); t('PCIE_3  x16', -10.6, -11.0);
+    t('M2_1', -9.0, 1.6); t('ATX_PWR', 9.7, 9.0, 16); t('CPU_PWR1', -11.6, 13.4, 16); t('CPU_FAN', 0.6, 14.2, 16);
+    t('BENCH B760-A', 1.6, -13.4, 28);
+    c.strokeStyle = 'rgba(228,234,240,.5)'; c.lineWidth = 2;
+    c.strokeRect(X(-6.9), Y(10.3), 6.8*sx, 7.6*sy);
+    c.strokeRect(X(-9.6), Y(1.4), 8.9*sx, 2.8*sy);
+    c.fillStyle = '#b89a5a';
+    for (const [x, y] of HOLES) { c.beginPath(); c.arc(X(x), Y(y), 0.42*sx, 0, 7); c.fill(); c.fillStyle = '#0d1014'; c.beginPath(); c.arc(X(x), Y(y), 0.2*sx, 0, 7); c.fill(); c.fillStyle = '#b89a5a'; }
+  });
+  const side = mat(0x12161b, 0.7, 0.1), front = mat(0xffffff, 0.72, 0.15, {map:tex});
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(24.4, 30.5, 0.2), [side, side, side, side, front, side]));
+  const metal = mat(0xa3acb6, 0.32, 0.85), dark = mat(0x2a3139, 0.45, 0.7), plastic = mat(0x101317, 0.8, 0.05);
+  box(g, 6.2, 7.2, 0.5, metal, -3.5, 6.5, 0.35);
+  box(g, 4.2, 4.9, 0.06, mat(0x6b5a32, 0.5, 0.7), -3.5, 6.5, 0.63);
+  const lever = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 7.2, 10), metal); lever.position.set(0.0, 6.5, 0.45); g.add(lever);
+  box(g, 2.4, 10.5, 2.2, dark, -8.4, 6.8, 1.2);
+  box(g, 9, 2.4, 2.2, dark, -3.0, 12.9, 1.2);
+  box(g, 2.6, 16, 3.6, mat(0x20262d, 0.5, 0.6), -10.9, 5, 1.9);
+  box(g, 0.08, 14, 0.3, mat(0xf0b23e, 0.5, 0.3), -9.55, 5, 3.3);
+  box(g, 2.2, 1.0, 1.0, plastic, -9.0, 14.3, 0.6);
+  box(g, 1.0, 5.4, 1.2, plastic, 11.6, 5.5, 0.7);
+  [5, 6.2, 7.4, 8.6].forEach((x, i) => { box(g, 0.7, 13.8, 0.8, i % 2 ? mat(0x4b545e, 0.6, 0.2) : mat(0x2a3038, 0.6, 0.2), x, 6.5, 0.5); box(g, 0.7, 0.6, 1.1, plastic, x, -0.6, 0.6); });
+  box(g, 5, 5, 0.9, dark, 6, -7.5, 0.55);
+  box(g, 0.6, 2.4, 0.5, plastic, -9.6, 0, 0.35);
+  cylZ(g, 0.25, 0.4, brass, -1.2, 0, 0.3, 10);
+  box(g, 8.9, 0.75, 1.1, metal, -6.2, -3.5, 0.65);
+  box(g, 2.5, 0.75, 1.1, plastic, -10.4, -8.0, 0.65);
+  box(g, 8.9, 0.75, 1.1, plastic, -6.2, -12.5, 0.65);
+  cylZ(g, 1.0, 0.3, metal, 2.6, -10.5, 0.25);
+  for (let i = 0; i < 4; i++) cylZ(g, 0.32, 0.7, mat(0xc7a24a, 0.4, 0.6), -11 + i*0.8, -14.3, 0.45, 12);
+  box(g, 1.2, 0.5, 0.8, plastic, 1.5, 14.4, 0.5);
+  reg('mobo', g, MO.clone(), [0, 0, 0], new V(-22, 2.1, 50), [-90*D, 0, 0], 20);
+  const boxDecor = new THREE.Mesh(new THREE.BoxGeometry(27, 2, 33), mat(0x252c35, 0.9, 0));
+  boxDecor.position.set(-22, 1, 50); boxDecor.receiveShadow = boxDecor.castShadow = true; boxDecor.userData.noPick = true; scene.add(boxDecor);
+}
+
+/* CPU */
+{
+  const g = new THREE.Group();
+  const gold = mat(0xd4af5a, 0.3, 0.95);
+  const sub = mat(0x245238, 0.6, 0.1);
+  box(g, 3.75, 4.5, 0.12, [sub, sub, sub, sub, sub, gold], 0, 0, 0.06);
+  const ihsTex = canvasTex(300, 390, (c, w, h) => {
+    c.fillStyle = '#c4c9ce'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#5a6068'; c.font = `600 34px ${MONO}`; c.fillText('XCORE 9', 40, 150);
+    c.font = `500 20px ${MONO}`; c.fillText('14900 · 3.2GHz', 40, 190); c.fillText('SRN48 X421', 40, 222); c.fillText('LGA · ●', 40, 254);
+  });
+  box(g, 3.0, 3.85, 0.32, [mat(0xb9bec4, 0.3, 0.9), mat(0xb9bec4, 0.3, 0.9), mat(0xb9bec4, 0.3, 0.9), mat(0xb9bec4, 0.3, 0.9), mat(0xffffff, 0.35, 0.85, {map:ihsTex}), mat(0xb9bec4, 0.3, 0.9)], 0, 0, 0.28);
+  const tri = new THREE.Shape(); tri.moveTo(0, 0); tri.lineTo(0.55, 0); tri.lineTo(0, 0.55); tri.closePath();
+  const tm = new THREE.Mesh(new THREE.ShapeGeometry(tri), gold); tm.position.set(-1.8, -2.17, 0.125); g.add(tm);
+  reg('cpu', g, M(-3.5, 6.5, 0.67), [0, 0, 0], new V(-6, 1.15, 30), [-90*D, 0, 0], 6, 14);
+  const tray = new THREE.Mesh(new THREE.BoxGeometry(6, 1, 7), mat(0x14171b, 0.6, 0.05));
+  tray.position.set(-6, 0.5, 30); tray.castShadow = tray.receiveShadow = true; tray.userData.noPick = true; scene.add(tray);
+}
+
+/* cooler */
+{
+  const g = new THREE.Group();
+  const copper = mat(0xc27a4a, 0.3, 0.95), alu = mat(0xc9cfd6, 0.35, 0.85), cap = mat(0x1d2228, 0.4, 0.6);
+  box(g, 4, 4, 0.6, copper, 0, 0, 0.3);
+  box(g, 9, 1.1, 0.4, mat(0xa3acb6, 0.35, 0.85), 0, 0, 0.75);
+  for (const x of [-1.5, -0.5, 0.5, 1.5]) cylZ(g, 0.3, 14.6, copper, x, 0, 7.9, 12);
+  for (let i = 0; i < 34; i++) box(g, 5, 12.5, 0.12, alu, 0, 0, 4.5 + i*0.3);
+  box(g, 5.2, 12.7, 0.45, cap, 0, 0, 14.8);
+  box(g, 5.2, 0.3, 0.1, mat(0xf0b23e, 0.5, 0.3), 0, -6.2, 15.06);
+  const fan = makeFan(12, 2.5, 0x15181c, 0x3a424c, 18); fan.rotation.y = Math.PI/2; fan.position.set(3.8, 0, 9.5); g.add(fan);
+  reg('cooler', g, M(-3.5, 6.5, 1.11), [0, 0, 0], new V(8, 0.05, 25), [-90*D, 0, 0], 12);
+}
+
+/* RAM */
+{
+  const g = new THREE.Group();
+  const pcb = mat(0x1f5136, 0.6, 0.1), spread = mat(0x2a2f36, 0.35, 0.8), gold = mat(0xd4af5a, 0.3, 0.95);
+  [-1.2, 1.2].forEach((x, i) => {
+    box(g, 0.12, 13.3, 3.1, pcb, x, 0, 1.55);
+    box(g, 0.16, 13.1, 2.8, spread, x - 0.16, 0, 1.7); box(g, 0.16, 13.1, 2.8, spread, x + 0.16, 0, 1.7);
+    box(g, 0.48, 12.8, 0.38, rgbMat(i*0.15), x, 0, 3.25);
+    box(g, 0.14, 12.6, 0.3, gold, x, 0, 0.15);
+  });
+  reg('ram', g, M(7.4, 6.5, 0.9), [0, 0, 0], new V(-6, 0.05, 44), [-90*D, 0, 0], 8);
+}
+
+/* M.2 */
+{
+  const g = new THREE.Group();
+  box(g, 8, 2.2, 0.08, mat(0x12202e, 0.6, 0.1), 0, 0, 0.04);
+  box(g, 0.5, 2.0, 0.09, mat(0xd4af5a, 0.3, 0.95), -3.75, 0, 0.04);
+  box(g, 1.3, 1.3, 0.14, mat(0x0d0f12, 0.5, 0.2), -2.2, 0, 0.15);
+  const lab = canvasTex(400, 110, (c, w, h) => { c.fillStyle = '#e9ecef'; c.fillRect(0, 0, w, h); c.fillStyle = '#20262d'; c.font = `600 34px ${MONO}`; c.fillText('NVMe 1TB', 16, 50); c.font = `500 20px ${MONO}`; c.fillText('PCIe 4.0 x4 · 2280', 16, 86); });
+  const lm = mat(0xffffff, 0.7, 0, {map:lab});
+  box(g, 5.6, 1.9, 0.16, [lm, lm, lm, lm, lm, lm], 1.0, 0, 0.16);
+  reg('m2', g, M(-5.2, 0, 0.36), [0, 0, 0], new V(5, 0.6, 47), [-90*D, 0, 0], 6, 14);
+}
+
+/* GPU */
+let gpuConnector;
+{
+  const g = new THREE.Group();
+  const shroud = mat(0x262b32, 0.45, 0.55);
+  box(g, 29.5, 0.25, 11.6, mat(0x2f353d, 0.4, 0.75), 0, 0.32, 6.3);
+  box(g, 29, 0.16, 11.2, mat(0x163021, 0.6, 0.1), 0, 0.1, 6.1);
+  const finTex = canvasTex(512, 64, (c, w, h) => { c.fillStyle = '#9aa2ab'; c.fillRect(0, 0, w, h); c.fillStyle = '#2b3036'; for (let x = 0; x < w; x += 6) c.fillRect(x, 0, 2, h); });
+  const finM = mat(0xffffff, 0.4, 0.8, {map:finTex}), finS = mat(0x8b939c, 0.4, 0.8);
+  box(g, 28.5, 2.2, 11, [finS, finS, finS, finS, finM, finM], 0, -1.25, 6.2);
+  box(g, 29.8, 0.5, 11.8, shroud, 0, -2.6, 6.3);
+  box(g, 29.8, 1.4, 0.3, shroud, 0, -2.0, 12.05);
+  box(g, 18, 0.35, 0.12, rgbMat(0.5), -2, -2.2, 12.24);
+  for (const x of [-9.6, 0, 9.6]) { const f = makeFan(9, 1.0, 0x1f242a, 0x3a414a, 26); f.rotation.x = Math.PI/2; f.position.set(x, -3.35, 6.3); g.add(f); }
+  box(g, 0.15, 4.8, 12.2, mat(0xb4bcc6, 0.35, 0.85), -14.85, -1.7, 6.0);
+  for (const [y, z] of [[-1.0, 3], [-1.0, 6], [-1.0, 9], [-2.6, 7.5]]) box(g, 0.2, 0.8, 1.6, mat(0x090b0d, 0.8, 0.1), -15.0, y, z);
+  box(g, 8.5, 0.16, 1.0, mat(0xd4af5a, 0.3, 0.95), -8.0, 0.1, -0.3);
+  gpuConnector = box(g, 2.0, 0.9, 0.8, mat(0x0d0f12, 0.8, 0.05), 6, -0.3, 12.3);
+  reg('gpu', g, M(1.8, -3.5, 1.2), [0, 0, 0], new V(28, 0.65, 48), [180*D, 0, 0], 16);
+}
+
+/* PSU */
+{
+  const g = new THREE.Group();
+  const body = mat(0x16191d, 0.55, 0.45);
+  const label = canvasTex(560, 344, (c, w, h) => {
+    c.fillStyle = '#16191d'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#f0b23e'; c.fillRect(36, 40, 6, 120);
+    c.fillStyle = '#e4eaf0'; c.font = `600 96px ${MONO}`; c.fillText('850W', 60, 128);
+    c.font = `500 24px ${MONO}`; c.fillStyle = '#9aa6b3'; c.fillText('80 PLUS GOLD · FULLY MODULAR', 60, 180);
+    c.fillText('AC 100–240V  ·  +12V 70.8A', 60, 216);
+  });
+  const grille = holeTex(5, 3);
+  const sockets = canvasTex(320, 200, (c, w, h) => {
+    c.fillStyle = '#16191d'; c.fillRect(0, 0, w, h); c.fillStyle = '#050607';
+    c.fillRect(20, 30, 70, 110); for (let i = 0; i < 6; i++) c.fillRect(110 + (i % 3)*64, 30 + Math.floor(i/3)*70, 52, 50);
+    c.fillStyle = '#8d9aa9'; c.font = `500 15px ${MONO}`; c.fillText('ATX  CPU/PCIe  ×6', 20, 180);
+  });
+  box(g, 14, 8.6, 15, [mat(0xffffff, 0.6, 0.3, {map:sockets}), mat(0xffffff, 0.5, 0.5, {map:grille}), body, body, mat(0xffffff, 0.55, 0.35, {map:label}), body]);
+  reg('psu', g, new V(-14.2, CY + 0.8 + 4.3, -1), [0, 0, 0], new V(42, 4.3, 16), [0, 0, 0], 24);
+}
+
+/* cables */
+const cableParts = [];
+{
+  const g = new THREE.Group();
+  const sleeve = mat(0x15181c, 0.55, 0.15);
+  const head = mat(0x0b0d0f, 0.7, 0.05);
+  const gpuC = new V(); scene.updateMatrixWorld(true);
+  const gp = parts.gpu; const tmp = new THREE.Object3D(); tmp.position.copy(gp.inPos); tmp.quaternion.copy(gp.inQ); tmp.updateMatrixWorld();
+  gpuC.copy(gpuConnector.position).applyMatrix4(tmp.matrixWorld);
+  const routes = [
+    {r:0.85, pts:[[-7.0, 7.5, 2.5], [2, 8.5, 3.5], [7, 14, 2], [7.5, 30, -1], [4.8, 36.25, -3.2], [2.5, 36.25, -6.9]], end:[1.4, 5.4, 1.2]},
+    {r:0.5, pts:[[-7.0, 9.6, -4], [5, 11, -5], [8.2, 25, -5.2], [6.5, 45.6, -6], [-10, 45.8, -6.6], [-18.1, 45.3, -7.2]], end:[2.2, 1.1, 1.1]},
+    {r:0.5, pts:[[-7.0, 8, 5.5], [0, 10, 7.2], [2.2, 19.5, 7.4], [1.2, 24.5, 7.2], [gpuC.x, gpuC.y, gpuC.z + 2.4], [gpuC.x, gpuC.y, gpuC.z + 0.9]], end:[2.1, 1.0, 1.0]}
+  ];
+  for (const rt of routes) {
+    const curve = new THREE.CatmullRomCurve3(rt.pts.map(p => new V(...p)), false, 'catmullrom', 0.35);
+    const geo = new THREE.TubeGeometry(curve, 140, rt.r, 10, false);
+    const mesh = new THREE.Mesh(geo, sleeve); g.add(mesh);
+    const end = curve.getPoint(1);
+    const h = box(g, rt.end[0], rt.end[1], rt.end[2], head, end.x, end.y, end.z);
+    const s0 = curve.getPoint(0);
+    const h0 = box(g, 0.8, rt.r*2.6, rt.r*2.6, head, s0.x - 0.2, s0.y, s0.z);
+    cableParts.push({mesh, total:geo.index.count, head:h, head0:h0});
+  }
+  const p = reg('cables', g, new V(), [0, 0, 0], new V(), [0, 0, 0], 0);
+  p.isCable = true;
+}
+function setCable(t){
+  for (const c of cableParts) {
+    const n = Math.floor(c.total * t / 3) * 3;
+    c.mesh.geometry.setDrawRange(0, n); c.mesh.visible = n > 0;
+    c.head.visible = t > 0.985; c.head0.visible = t > 0.01;
+  }
+}
+
+/* glass side panel */
+{
+  const g = new THREE.Group();
+  const glass = new THREE.MeshPhysicalMaterial({color:0xb8d3e4, metalness:0, roughness:0.06, transparent:true, opacity:0.17, depthWrite:false, side:THREE.DoubleSide});
+  const gm = new THREE.Mesh(new THREE.BoxGeometry(45, 46, 0.4), glass); gm.castShadow = false; g.add(gm);
+  const fr = mat(0x0d0f12, 0.6, 0.2);
+  box(g, 45, 1.4, 0.45, fr, 0, 22.3, 0.02); box(g, 45, 1.4, 0.45, fr, 0, -22.3, 0.02);
+  box(g, 1.4, 46, 0.45, fr, 22.3, 0, 0.02); box(g, 1.4, 46, 0.45, fr, -22.3, 0, 0.02);
+  for (const [x, y] of [[-21, 21], [21, 21], [-21, -21], [21, -21]]) cylZ(g, 0.7, 0.6, mat(0x9aa3ad, 0.3, 0.9), x, y, 0.4, 16);
+  const p = reg('panel', g, new V(0, CY + 23, 10.75), [0, 0, 0], new V(-55, 0.6, 10), [-90*D, 0, 0], 18, 22);
+  gm.castShadow = false;
+  p.glass = gm;
+}
+
+/* ---------------------------------------------------------------- state & motion */
+const ACC = new THREE.Color(0xf0b23e);
+const state = {power:0};
+let power = 0;
+const ease = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3)/2;
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const _q = new THREE.Quaternion();
+function poseAt(p, s){
+  const lift = p.stPos.clone().add(new V(0, p.lift, 0));
+  const appr = p.inPos.clone().addScaledVector(p.dir, p.approach);
+  if (s <= 0) { p.group.position.copy(p.stPos); p.group.quaternion.copy(p.stQ); return; }
+  if (s >= 1) { p.group.position.copy(p.inPos); p.group.quaternion.copy(p.inQ); return; }
+  if (s < 0.2) { p.group.position.copy(p.stPos).lerp(lift, ease(s/0.2)); p.group.quaternion.copy(p.stQ); }
+  else if (s < 0.72) {
+    const u = ease((s - 0.2)/0.52);
+    p.group.position.copy(lift).lerp(appr, u); p.group.position.y += Math.sin(Math.PI*u)*5;
+    p.group.quaternion.copy(_q.slerpQuaternions(p.stQ, p.inQ, u));
+  } else { p.group.position.copy(appr).lerp(p.inPos, easeOut((s - 0.72)/0.28)); p.group.quaternion.copy(p.inQ); }
+}
+function setPartState(id, on){
+  state[id] = on;
+  if (id === 'power') { power = on ? 1 : 0; return; }
+  const p = parts[id];
+  if (p.isCable) setCable(on ? 1 : 0); else poseAt(p, on ? 1 : 0);
+}
+
+let mode = 'asm', steps = ASM, cur = 0, anim = null, speed = 1, auto = false, autoTimer = null, selected = null, hover = null;
+function initialOn(){ return mode === 'dis'; }
+function applyInstant(n){
+  const on = initialOn();
+  for (const id of Object.keys(parts)) setPartState(id, on);
+  setPartState('power', on);
+  for (let i = 0; i < n; i++) setPartState(steps[i].id, steps[i].dir === 'in');
+}
+function runStep(step, reverse, onDone){
+  const toIn = (step.dir === 'in') !== reverse;
+  let dur, update;
+  if (step.id === 'power') { dur = 1.6; update = t => { power = toIn ? t : 1 - t; }; }
+  else if (step.id === 'cables') { dur = 2.4; update = t => setCable(toIn ? ease(t) : 1 - ease(t)); }
+  else { const p = parts[step.id]; dur = 2.9; update = t => poseAt(p, toIn ? t : 1 - t); }
+  anim = {t:0, dur:dur/speed, update, id:step.id, done:() => { setPartState(step.id, toIn); onDone && onDone(); }};
+  if (step.id === 'power') showToast(toIn);
+}
+
+/* ---------------------------------------------------------------- camera */
+const VIEWS = {
+  overview:[2, 18, 14, 74, 60, 104],
+  mobo:[-9, 30, -6, 30, 48, 74], cpu:[-12.6, 36.8, -8, 6, 46, 26], cooler:[-12, 36, -2, 22, 50, 48],
+  ram:[-2, 36.8, -6, 18, 46, 32], m2:[-14, 30.3, -8.5, 2, 40, 24], psu:[-12, 8, 0, 24, 26, 50],
+  gpu:[-6, 26, -2, 28, 38, 54], cables:[-4, 26, -2, 40, 42, 64], panel:[0, 24, 4, 62, 44, 92], power:[0, 24, 4, 64, 46, 92], case:[0, 23, 0, 62, 44, 92]
+};
+let camTween = null;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function viewVec(name){
+  const v = VIEWS[name] || VIEWS.overview;
+  const t = new V(v[0], v[1], v[2]), p = new V(v[3], v[4], v[5]);
+  const k = camera.aspect < 0.9 ? 1.65 : camera.aspect < 1.25 ? 1.25 : 1;
+  p.sub(t).multiplyScalar(k).add(t);
+  return [t, p];
+}
+function flyTo(name, dur=1.3){
+  const [t, p] = viewVec(name);
+  if (reduceMotion) { controls.target.copy(t); camera.position.copy(p); camTween = null; return; }
+  camTween = {t:0, dur, fT:controls.target.clone(), tT:t, fP:camera.position.clone(), tP:p};
+}
+controls.addEventListener('start', () => { camTween = null; });
+
+/* ---------------------------------------------------------------- UI */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
+function renderInfo(){
+  const total = steps.length;
+  $('stepNo').textContent = `STEP ${String(cur).padStart(2, '0')} / ${total}`;
+  $('modePill').textContent = mode === 'asm' ? '조립' : '분해';
+  $('modePill').className = 'pill ' + (mode === 'asm' ? 'in' : 'out');
+  let html = '';
+  if (selected) {
+    const I = INFO[selected];
+    $('infoTitle').textContent = I.name; $('infoEn').textContent = I.en;
+    $('stepNo').textContent = '부품 살펴보기';
+    html = sec('무엇을 하나요', I.role) + sec(I.hin || '장착 방법', I.in) + (selected !== 'case' ? sec(I.hout || '분리 방법', I.out) : '') + specs(I) + notes(I) +
+      `<button class="back" id="backBtn">현재 단계로 돌아가기</button>`;
+  } else if (cur === 0) {
+    if (mode === 'asm') {
+      $('infoTitle').textContent = '조립 준비'; $('infoEn').textContent = 'Before you start';
+      html = sec('지금 상태', '작업대 위에 부품 8가지가 놓여 있고, 케이스는 옆판이 열린 채 비어 있습니다. 아래 순서대로 하나씩 케이스에 넣어 컴퓨터 한 대를 완성합니다.') +
+        sec('준비물', '+2번 십자 드라이버, 써멀 그리스, 케이블 타이. 정전기에 약한 부품이 많으니 카펫 위는 피하고, 시작 전에 금속 케이스를 만져 몸의 정전기를 빼 주세요.') +
+        `<div class="note"><b>TIP</b><span>3D 화면의 부품을 클릭하면 순서와 상관없이 그 부품의 용도를 볼 수 있습니다.</span></div>`;
+    } else {
+      $('infoTitle').textContent = '분해 준비'; $('infoEn').textContent = 'Before you start';
+      html = sec('지금 상태', '완성된 컴퓨터가 켜져 있습니다. 분해는 조립의 역순입니다. 전원을 완전히 끊는 것부터 시작해, 바깥쪽 부품에서 안쪽 부품 순서로 떼어 냅니다.') +
+        sec('준비물', '+2번 십자 드라이버, 나사를 담을 작은 그릇, 소독용 알코올과 천(써멀 그리스 청소용).') +
+        `<div class="note caution"><b>주의</b><span>전원 코드가 꽂힌 상태로는 절대 부품을 만지지 마세요.</span></div>`;
+    }
+  } else {
+    const st = steps[cur - 1], I = INFO[st.id], isIn = st.dir === 'in';
+    $('infoTitle').textContent = st.title; $('infoEn').textContent = I.en;
+    html = sec('무엇을 하나요', I.role) + sec(isIn ? (I.hin || '장착 방법') : (I.hout || '분리 방법'), isIn ? I.in : I.out) + specs(I) + notes(I);
+    if (cur === total) html += `<div class="note"><b>${mode === 'asm' ? 'DONE' : 'DONE'}</b><span>${mode === 'asm' ? '조립 완료! 위쪽의 <strong>분해</strong> 버튼을 누르면 이번엔 역순으로 분해해 볼 수 있습니다.' : '분해 완료! 모든 부품이 작업대로 돌아왔습니다. <strong>조립</strong> 모드로 다시 맞춰 보세요.'}</span></div>`;
+  }
+  $('infoBody').innerHTML = html;
+  const b = $('backBtn'); if (b) b.onclick = () => { selected = null; renderInfo(); };
+}
+const sec = (h, p) => `<section><h3>${esc(h)}</h3><p>${esc(p)}</p></section>`;
+const specs = I => I.specs ? `<div class="specs">${I.specs.map(s => `<span>${esc(s)}</span>`).join('')}</div>` : '';
+const notes = I => (I.note ? `<div class="note"><b>${esc(I.note[0])}</b><span>${esc(I.note[1])}</span></div>` : '') + (I.caution ? `<div class="note caution"><b>주의</b><span>${esc(I.caution)}</span></div>` : '');
+
+function renderList(){
+  const ol = $('stepList'); ol.innerHTML = '';
+  steps.forEach((s, i) => {
+    const li = document.createElement('li');
+    const done = i < cur, now = (anim ? i === cur - 1 : i === cur);
+    li.className = done && !(anim && i === cur - 1) ? 'done' : now ? 'now' : '';
+    if (anim && i === cur - 1) li.className = 'now';
+    const label = li.className === 'done' ? '완료' : li.className === 'now' ? (anim ? '진행 중' : '다음') : '';
+    li.innerHTML = `<button id="step-${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span>${esc(s.title)}</span><span class="st">${label}</span></button>`;
+    li.querySelector('button').onclick = () => jump(i + 1);
+    ol.appendChild(li);
+  });
+  $('progTxt').textContent = `${cur} / ${steps.length}`;
+  $('progBar').style.width = (cur / steps.length * 100) + '%';
+  $('btnPrev').disabled = !!anim || cur === 0;
+  $('btnNext').disabled = !!anim || cur >= steps.length;
+  $('nextLabel').textContent = cur >= steps.length ? '모든 단계 완료' : `다음: ${steps[cur].title}`;
+}
+function refresh(){ renderInfo(); renderList(); }
+
+function next(){
+  if (anim || cur >= steps.length) return;
+  selected = null;
+  const st = steps[cur]; cur++;
+  flyTo(st.id);
+  runStep(st, false, afterStep);
+  refresh();
+}
+function prev(){
+  if (anim || cur === 0) return;
+  stopAuto(); selected = null;
+  const st = steps[cur - 1];
+  flyTo(st.id);
+  runStep(st, true, () => { cur--; refresh(); });
+  anim.prev = true;
+  refresh();
+}
+function jump(k){
+  if (anim) return;
+  stopAuto(); selected = null;
+  applyInstant(k - 1); cur = k - 1;
+  next();
+}
+function afterStep(){
+  refresh();
+  if (auto) { if (cur < steps.length) autoTimer = setTimeout(next, 900/speed); else stopAuto(); }
+}
+function stopAuto(){ auto = false; clearTimeout(autoTimer); $('btnAuto').setAttribute('aria-pressed', 'false'); $('btnAuto').textContent = '▶ 자동 재생'; }
+function setMode(m){
+  if (anim) { anim.update(1); anim.done = () => {}; anim = null; }
+  stopAuto(); mode = m; steps = m === 'asm' ? ASM : DIS; cur = 0; selected = null;
+  $('modeAsm').setAttribute('aria-pressed', m === 'asm'); $('modeDis').setAttribute('aria-pressed', m === 'dis');
+  applyInstant(0); flyTo('overview'); refresh();
+}
+$('modeAsm').onclick = () => setMode('asm');
+$('modeDis').onclick = () => setMode('dis');
+$('btnNext').onclick = next;
+$('btnPrev').onclick = prev;
+$('btnView').onclick = () => flyTo('overview');
+$('speedSel').onchange = e => { speed = parseFloat(e.target.value); };
+$('btnAuto').onclick = () => {
+  if (auto) { stopAuto(); return; }
+  if (cur >= steps.length) { applyInstant(0); cur = 0; refresh(); }
+  auto = true; $('btnAuto').setAttribute('aria-pressed', 'true'); $('btnAuto').textContent = '❚❚ 일시 정지';
+  if (!anim) next();
+};
+window.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('select')) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+});
+
+let toastTimer;
+function showToast(on){
+  const t = $('toast');
+  t.classList.toggle('off', !on);
+  $('toastK').textContent = on ? 'POST OK' : 'POWER OFF';
+  $('toastT').textContent = on ? 'CPU · 메모리 32GB · 그래픽카드 · SSD 인식 완료' : '전원 차단 · 잔류 전원 방전 완료';
+  t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3800);
+}
+
+/* ---------------------------------------------------------------- picking */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let downAt = null;
+function pickAt(e){
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left)/r.width)*2 - 1, -((e.clientY - r.top)/r.height)*2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(scene.children, true);
+  for (const h of hits) {
+    let o = h.object; if (!o.visible || o.userData.noPick) continue;
+    const id = o.userData.partId; if (!id) continue;
+    if (id === 'panel' && state.panel && o === parts.panel.glass) continue;
+    return id;
+  }
+  return null;
+}
+renderer.domElement.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!downAt) return;
+  const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]); downAt = null;
+  if (moved > 6) return;
+  const id = pickAt(e);
+  selected = id; renderInfo();
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (e.buttons) return;
+  hover = pickAt(e);
+  renderer.domElement.style.cursor = hover ? 'pointer' : '';
+});
+renderer.domElement.addEventListener('pointerleave', () => { hover = null; });
+
+/* ---------------------------------------------------------------- loop */
+function resize(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+
+const tagEl = $('tag'), tagTxt = $('tagText');
+const bb = new THREE.Box3(), bc = new V();
+const clock = new THREE.Clock();
+const tmpC = new THREE.Color();
+function frame(){
+  const dt = Math.min(clock.getDelta(), 0.05), time = clock.elapsedTime;
+  if (anim) { anim.t += dt; const t = Math.min(anim.t/anim.dur, 1); anim.update(t); if (t >= 1) { const a = anim; anim = null; a.done(); if (!a.prev) refresh(); } }
+  if (camTween) {
+    camTween.t += dt; const u = ease(Math.min(camTween.t/camTween.dur, 1));
+    controls.target.lerpVectors(camTween.fT, camTween.tT, u); camera.position.lerpVectors(camTween.fP, camTween.tP, u);
+    if (camTween.t >= camTween.dur) camTween = null;
+  }
+  for (const f of fans) f.rotor.rotation.z += dt * f.spin * power;
+  for (const m of rgbMats) { tmpC.setHSL((time*0.07 + m.userData.hue) % 1, 0.75, 0.55); m.emissive.copy(tmpC); m.emissiveIntensity = power * 2.2; }
+  ledMat.emissive.set(0xf0b23e); ledMat.emissiveIntensity = power * 2.5;
+  glow.intensity = power * 120;
+
+  const aid = anim && anim.id !== 'power' ? anim.id : null;
+  for (const p of Object.values(parts)) {
+    const k = p.id === aid ? 0.32 + 0.18*Math.sin(time*7) : p.id === hover ? 0.2 : p.id === selected ? 0.14 : 0;
+    if (Math.abs(k - p.hl) < 0.001) continue;
+    p.hl = k; for (const m of p.mats) { m.emissive.copy(ACC); m.emissiveIntensity = k; }
+  }
+  const tagId = aid || selected;
+  if (tagId && tagId !== 'case' && (tagId !== 'cables' || state.cables || aid)) {
+    bb.setFromObject(parts[tagId].group); bb.getCenter(bc); bc.y = bb.max.y + 1;
+    bc.project(camera);
+    const x = (bc.x*0.5 + 0.5)*stage.clientWidth, y = (-bc.y*0.5 + 0.5)*stage.clientHeight;
+    tagTxt.textContent = INFO[tagId].name;
+    tagEl.style.transform = bc.z < 1 ? `translate(${Math.round(x - 5)}px, ${Math.round(y - 30)}px)` : 'translate(-9999px,0)';
+  } else tagEl.style.transform = 'translate(-9999px,0)';
+
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+applyInstant(0);
+{ const [t, p] = viewVec('overview'); controls.target.copy(t); camera.position.copy(p); }
+refresh();
+frame();
+</script>
+</body>
+</html>
